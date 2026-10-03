@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "kind": "mfe",
+  "name": "mfe-user-journey-admin-asset-manager",
+  "org": "Ngx-Workshop",
+  "type": "user-journey",
+  "seed": "seed-mfe-remote",
+  "port": 4201
+}

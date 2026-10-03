@@ -1,0 +1,46 @@
+{
+  "name": "mfe-user-journey-admin-asset-manager",
+  "version": "0.0.1",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration production",
+    "test": "ng test",
+    "run:all": "node node_modules/@angular-architects/module-federation/src/server/mf-dev-server.js",
+    "serve:bundle": "http-server ./dist/mfe-user-journey-admin-asset-manager -p 4201 -a 0.0.0.0 --cors -c-1",
+    "dev:bundle": "node scripts/dev-bundle.mjs"
+  },
+  "private": true,
+  "dependencies": {
+    "@angular-architects/module-federation": "20.0.0",
+    "@angular/animations": "21.1.0",
+    "@angular/cdk": "21.1.0",
+    "@angular/common": "21.1.0",
+    "@angular/compiler": "21.1.0",
+    "@angular/core": "21.1.0",
+    "@angular/forms": "21.1.0",
+    "@angular/material": "21.1.0",
+    "@angular/platform-browser": "21.1.0",
+    "@angular/router": "21.1.0",
+    "rxjs": "7.8.2",
+    "tslib": "2.8.1"
+  },
+  "devDependencies": {
+    "@angular/build": "^21.1.0",
+    "@angular/cli": "21.1.0",
+    "@angular/compiler-cli": "21.1.0",
+    "@tmdjr/ngx-user-metadata": "^21.0.4",
+    "@tmdjr/seed-service-nestjs-contracts": "0.0.7",
+    "@types/jasmine": "~5.1.0",
+    "jasmine-core": "~5.7.0",
+    "karma": "~6.4.0",
+    "karma-chrome-launcher": "~3.2.0",
+    "karma-coverage": "~2.2.0",
+    "karma-jasmine": "~5.1.0",
+    "karma-jasmine-html-reporter": "~2.1.0",
+    "ngx-build-plus": "^20.0.0",
+    "typescript": "~5.9.3",
+    "http-server": "^14.1.1"
+  }
+}
