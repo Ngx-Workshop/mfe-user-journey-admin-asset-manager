@@ -8,8 +8,19 @@ editor and details/confirmation dialogs. API service derives types from publishe
 components schemas and sends JSON or FormData to /api/uploader. Keep HTTP client
 at the host boundary; standalone appConfig provides it for local bootstrap.
 
+The manager remains the orchestration component for dialogs and user intentions.
+A component-scoped store owns API workflows and private writable signals, exposing
+read-only state and explicit mutation methods. Summary, library and card components
+are presentational boundaries. The library consumes a single read-only store
+contract and derives a computed template view model. It delegates filters and
+result states to focused components using cohesive view-model slices and typed
+outputs for user intentions. All component templates/styles are inline and
+component CSS follows BEM.
+
 ## Mapping and constitution
-FR-001: signals/computed list and local filters in app/components/asset-manager.
+FR-001: signal/computed list and local filters in the component-scoped store;
+the manager coordinates dialogs, while summary, library and card presentation
+components render state and emit intentions.
 FR-002/003: editor dialog, typed form and validation helpers; upload reports events.
 FR-004: details and delete confirmation dialogs; pending actions/errors in list.
 FR-005: root App and Routes keep exports; empty route directly mounts App and

@@ -7,36 +7,34 @@ import { NgxParticleHeader } from '@tmdjr/ngx-shared-headers';
   imports: [MatIcon, NgxParticleHeader],
   template: `
     <ngx-particle-header>
-      <div class="hero-content">
-        <div class="eyebrow">
+      <div class="asset-header">
+        <div class="asset-header__eyebrow">
           <mat-icon>photo_library</mat-icon>
           NGX-WORKSHOP / CONTENT LIBRARY
         </div>
-        <h1>Asset Manager</h1>
-        <p>A home for your workshop files and creative resources.</p>
+        <h1 class="asset-header__title">Asset Manager</h1>
+        <p class="asset-header__subtitle">
+          A home for your workshop files and creative resources.
+        </p>
       </div>
     </ngx-particle-header>
   `,
-  styles: [
-    `
+  styles: `
       :host,
       ngx-particle-header {
         display: block;
       }
 
-      .hero-content {
+      .asset-header {
         width: min(100% - 3rem, 1440px);
         margin: 0 auto;
         padding: 2.5rem 0 2.25rem;
         color: var(--mat-sys-on-primary);
       }
 
-      .eyebrow {
+      .asset-header__eyebrow {
         display: flex;
         align-items: center;
-      }
-
-      .eyebrow {
         gap: 0.45rem;
         margin-bottom: 0.55rem;
         font-size: 0.72rem;
@@ -46,13 +44,13 @@ import { NgxParticleHeader } from '@tmdjr/ngx-shared-headers';
         opacity: 0.8;
       }
 
-      .eyebrow mat-icon {
+      .asset-header__eyebrow mat-icon {
         width: 1rem;
         height: 1rem;
         font-size: 1rem;
       }
 
-      h1 {
+      .asset-header__title {
         margin: 0;
         font-size: clamp(2rem, 4vw, 3.25rem);
         font-weight: 500;
@@ -60,19 +58,18 @@ import { NgxParticleHeader } from '@tmdjr/ngx-shared-headers';
         letter-spacing: -0.04em;
       }
 
-      .hero-content p {
+      .asset-header__subtitle {
         margin: 0.75rem 0 0;
         font-size: 1rem;
         opacity: 0.78;
       }
 
       @media (max-width: 700px) {
-        .hero-content {
+        .asset-header {
           width: min(100% - 2rem, 1440px);
           padding: 2rem 0;
         }
       }
     `,
-  ],
 })
 export class MfeAssetManagerHeader {}

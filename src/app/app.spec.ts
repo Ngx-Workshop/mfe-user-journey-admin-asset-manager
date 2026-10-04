@@ -79,17 +79,17 @@ describe('Asset manager', () => {
     const { manager } = setup();
     http.expectOne('/api/uploader').flush([logo, record]);
     expect(manager.filtered()).toEqual([logo]);
-    manager.query.set('BRANDING');
+    manager.setQuery('BRANDING');
     expect(manager.filtered()).toEqual([logo]);
-    manager.query.set('logo.svg');
+    manager.setQuery('logo.svg');
     expect(manager.filtered()).toEqual([logo]);
-    manager.typeFilter.set('video');
+    manager.setTypeFilter('video');
     expect(manager.filtered()).toEqual([]);
     manager.clearFilters();
-    manager.storageFilter.set('AWAITING_UPLOAD');
+    manager.setStorageFilter('AWAITING_UPLOAD');
     expect(manager.filtered()).toEqual([]);
-    manager.storageFilter.set('all');
-    manager.archiveFilter.set('archived');
+    manager.setStorageFilter('all');
+    manager.setArchiveFilter('archived');
     expect(manager.filtered()).toEqual([record]);
   });
   it('recovers from a list failure by retrying', () => {

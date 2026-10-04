@@ -24,8 +24,8 @@ use disposable data in an approved environment for mutation checks.
 
 ## Current verification and limitations
 2026-10-03: production build and 16 ChromeHeadless tests pass (execution host
-Node 24.9.0). Build has a nonfatal component-style warning: Asset Manager CSS
-4.70 kB exceeds the seed's 4 kB warning; below its 8 kB error threshold.
+Node 24.9.0). Component styles remain below the configured warning budget after
+the orchestration/presentation refactor.
 Authenticated shell consumed the local bundle, returned an empty library, and
 rendered dialogs and blank-name validation. Narrow and desktop layouts inspected.
 Live mutations and a library containing real assets were not exercised.

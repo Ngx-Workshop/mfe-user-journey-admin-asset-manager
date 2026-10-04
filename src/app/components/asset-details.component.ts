@@ -15,10 +15,14 @@ import { Asset, formatBytes } from '../services/asset-api.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DatePipe, MatDialogModule, MatButtonModule],
   template: `
-    <h2 mat-dialog-title>{{ asset.name }}</h2>
-    <mat-dialog-content>
-      <p>{{ asset.description || 'No description' }}</p>
-      <dl>
+    <h2 mat-dialog-title class="asset-details__title">
+      {{ asset.name }}
+    </h2>
+    <mat-dialog-content class="asset-details">
+      <p class="asset-details__description">
+        {{ asset.description || 'No description' }}
+      </p>
+      <dl class="asset-details__list">
         <dt>Asset ID</dt>
         <dd>{{ asset._id }}</dd>
         <dt>Storage</dt>
@@ -40,7 +44,9 @@ import { Asset, formatBytes } from '../services/asset-api.service';
         <dt>Tags</dt>
         <dd>{{ asset.tags.join(', ') || '—' }}</dd>
         <dt>SHA-256</dt>
-        <dd class="checksum">{{ asset.checksumSha256 || '—' }}</dd>
+        <dd class="asset-details__checksum">
+          {{ asset.checksumSha256 || '—' }}
+        </dd>
         <dt>Version</dt>
         <dd>{{ asset.version }}</dd>
         <dt>Created</dt>
@@ -50,7 +56,7 @@ import { Asset, formatBytes } from '../services/asset-api.service';
         <dt>Received</dt>
         <dd>{{ (asset.receivedAt | date : 'medium') || '—' }}</dd>
       </dl>
-      <p>
+      <p class="asset-details__note">
         File receipt records metadata. Durable storage, preview and
         download are not yet available.
       </p>
@@ -63,27 +69,32 @@ import { Asset, formatBytes } from '../services/asset-api.service';
   `,
   styles: [
     `
-      dl {
+      .asset-details__list {
         display: grid;
         grid-template-columns: 140px minmax(0, 1fr);
         gap: 12px;
       }
-      dt {
+
+      .asset-details__list dt {
         opacity: 0.7;
       }
-      dd {
+
+      .asset-details__list dd {
         margin: 0;
         overflow-wrap: anywhere;
       }
-      .checksum {
+
+      .asset-details__checksum {
         font-family: monospace;
       }
+
       @media (max-width: 480px) {
-        dl {
+        .asset-details__list {
           grid-template-columns: 1fr;
           gap: 6px;
         }
-        dd {
+
+        .asset-details__list dd {
           margin-bottom: 10px;
         }
       }
@@ -96,22 +107,28 @@ export class AssetDetailsComponent {
 }
 @Component({
   selector: 'ngx-delete-asset',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MatDialogModule, MatButtonModule],
-  template: `<h2 mat-dialog-title>Delete asset?</h2>
-    <mat-dialog-content>
-      <p>
+  template: `
+    <h2 mat-dialog-title class="delete-asset__title">
+      Delete asset?
+    </h2>
+    <mat-dialog-content class="delete-asset">
+      <p class="delete-asset__warning">
         Permanently delete “{{ asset.name }}” and its metadata? This
         cannot be undone.
       </p>
-      <p>
+      <p class="delete-asset__alternative">
         Archive the asset instead if you may need it later.
-      </p> </mat-dialog-content
-    ><mat-dialog-actions align="end">
+      </p>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
       <button mat-button [mat-dialog-close]="false">Cancel</button>
       <button mat-flat-button [mat-dialog-close]="true">
         Delete permanently
       </button>
-    </mat-dialog-actions>`,
+    </mat-dialog-actions>
+  `,
 })
 export class DeleteAssetComponent {
   readonly asset = inject<Asset>(MAT_DIALOG_DATA);

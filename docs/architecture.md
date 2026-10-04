@@ -11,15 +11,27 @@ or binary persistence.
 | Bootstrap / standalone providers | `src/main.ts`, `src/bootstrap.ts`, `src/app/app.config.ts` |
 | Federation root | `src/app/app.ts`: named and default `App` |
 | Routes | `src/app/app.routes.ts`: named `Routes`, empty path and legacy `hello-world` |
-| Library/state/filters | `src/app/components/asset-manager.component.*` |
+| Library/dialog orchestration | `src/app/components/asset-manager.component.ts` |
+| Component-scoped signal state/API workflows | `src/app/components/asset-manager.store.ts` |
+| Summary/library composition | `src/app/components/asset-manager-summary.component.ts`, `asset-library.component.ts` |
+| Filters/results/card presentation | `src/app/components/asset-library-filters.component.ts`, `asset-library-results.component.ts`, `asset-card.component.ts` |
+| Library view-model contracts | `src/app/components/asset-library.models.ts` |
+| Filter types/media mapping | `src/app/components/asset-manager.models.ts`, `asset-manager.utils.ts` |
 | Metadata/file intake | `src/app/components/asset-editor.component.ts` |
 | Details/delete confirmation | `src/app/components/asset-details.component.ts` |
 | Typed forms/mapping | `src/app/services/asset-form.ts` |
 | API/errors/file validation | `src/app/services/asset-api.service.ts` |
 
-Components use OnPush, local signals, computed filters, typed reactive forms and
-RxJS subscriptions bound to component lifetime. Material dialogs retain input on
-failure and block closing during writes. Local assets change after server success.
+Components use inline templates and styles, OnPush change detection, and BEM class
+names. The manager coordinates dialogs and user intentions. Its component-scoped
+store encapsulates writable signals, computed filters, API workflows, errors and
+pending state while exposing read-only signals. Presentational components receive
+the store's read-only signal contract and derive a computed template view model.
+The library passes cohesive filter and result view-model slices to focused child
+components. They emit typed user intentions without owning or mutating server
+state. RxJS subscriptions are bound to the manager lifetime and write into signals.
+Material dialogs retain input on failure and block closing during writes. Local
+assets change after server success.
 
 ## Published contracts
 Installed `@tmdjr/service-uploader-contracts` 0.0.7 `components.schemas` supplies

@@ -39,7 +39,7 @@ import { assetForm, metadata } from '../services/asset-form';
     MatProgressBarModule,
   ],
   template: `
-    <h2 mat-dialog-title>
+    <h2 mat-dialog-title class="asset-editor__title">
       {{
         data.asset
           ? 'Edit asset'
@@ -48,35 +48,45 @@ import { assetForm, metadata } from '../services/asset-form';
           : 'Create asset record'
       }}
     </h2>
-    <mat-dialog-content>
+    <mat-dialog-content class="asset-editor">
       @if (data.upload) {
-      <p>
+      <p class="asset-editor__guidance">
         Receive a file up to 25 MiB. Durable storage is pending; files
         cannot be previewed or downloaded yet.
       </p>
-      <label class="file-label" for="asset-file">Choose file</label>
+      <label class="asset-editor__file-label" for="asset-file">
+        Choose file
+      </label>
       <input
+        class="asset-editor__file-input"
         id="asset-file"
         type="file"
         (change)="choose($event)"
         [disabled]="busy()"
       />
       @if (file()) {
-      <p>{{ file()!.name }} · {{ bytes(file()!.size) }}</p>
+      <p class="asset-editor__file-summary">
+        {{ file()!.name }} · {{ bytes(file()!.size) }}
+      </p>
       } }
       <form
+        class="asset-editor__form"
         [formGroup]="form"
         (ngSubmit)="save()"
         id="asset-editor-form"
       >
-        <mat-form-field appearance="outline"
+        <mat-form-field
+          class="asset-editor__field"
+          appearance="outline"
           ><mat-label>{{
             data.upload ? 'Display name (optional)' : 'Name'
           }}</mat-label>
           <input matInput formControlName="name" maxlength="120" />
           <mat-error>Enter a name up to 120 characters.</mat-error>
         </mat-form-field>
-        <mat-form-field appearance="outline"
+        <mat-form-field
+          class="asset-editor__field"
+          appearance="outline"
           ><mat-label>Description</mat-label>
           <textarea
             matInput
@@ -87,7 +97,9 @@ import { assetForm, metadata } from '../services/asset-form';
           <mat-error>Use up to 2000 characters.</mat-error>
         </mat-form-field>
         @if (!data.upload) {
-        <mat-form-field appearance="outline"
+        <mat-form-field
+          class="asset-editor__field"
+          appearance="outline"
           ><mat-label>Tags</mat-label>
           <input
             matInput
@@ -105,13 +117,14 @@ import { assetForm, metadata } from '../services/asset-form';
         }
       </form>
       @if (error()) {
-      <p class="error" role="alert">{{ error() }}</p>
+      <p class="asset-editor__error" role="alert">{{ error() }}</p>
       } @if (busy()) {
       <mat-progress-bar
+        class="asset-editor__progress"
         [mode]="progress() === null ? 'indeterminate' : 'determinate'"
         [value]="progress() ?? 0"
       />
-      <p role="status">
+      <p class="asset-editor__status" role="status">
         {{
           data.upload
             ? progress() === null
@@ -140,19 +153,22 @@ import { assetForm, metadata } from '../services/asset-form';
   `,
   styles: [
     `
-      mat-form-field {
+      .asset-editor__field {
         display: block;
         margin-top: 16px;
       }
-      input[type='file'] {
+
+      .asset-editor__file-input {
         max-width: 100%;
         margin: 12px 0;
       }
-      .file-label {
+
+      .asset-editor__file-label {
         display: block;
         font-weight: 500;
       }
-      .error {
+
+      .asset-editor__error {
         color: var(--mat-sys-error, #b3261e);
       }
     `,

@@ -22,10 +22,13 @@ preview/download and deployment are outside this remote's contract.
   shell route without redirecting to hello-world; keep legacy deep links working.
 
 ## Quality and boundaries
-Use standalone OnPush components, signals, typed reactive forms and Material.
-Keyboard labeled controls and responsive layouts are required. Service owns data
-and authorization. Consume installed @tmdjr/service-uploader-contracts 0.0.7 via
-same-origin /api/uploader with credentials. User's manifest/lockfile changes remain.
+Use standalone OnPush components with inline templates/styles and BEM class names.
+Keep server interactions and state orchestration separate from presentational
+components, using signal inputs, typed outputs, computed state, typed reactive forms,
+RxJS and Material. Keyboard labeled controls and responsive layouts are required.
+Service owns data and authorization. Consume installed
+@tmdjr/service-uploader-contracts 0.0.7 via same-origin /api/uploader with
+credentials. User's manifest/lockfile changes remain.
 
 ## Evidence and success criteria
 Seed app and hosted shell currently display Example MongoDB Docs. Gateway source

@@ -10,6 +10,14 @@ and confirmed permanent deletion. Errors preserve entered input and server-owned
 state, with retry and session guidance. Upload receipt accurately reports pending
 storage. Published uploader 0.0.7 schema types define requests/results.
 
+AssetManagerComponent now coordinates dialogs and user intentions. Its
+component-scoped AssetManagerStore owns API workflows, private writable signals,
+read-only selectors and computed state. OnPush summary, library and card components
+are presentational. The library receives one read-only store contract, derives its
+computed template view model, and delegates cohesive filter and result slices to
+focused child components. All components emit typed outputs, use inline
+templates/styles, and follow BEM.
+
 Default/named App and named Routes exports remain compatible. Base route opens
 the library and hello-world is a legacy alias. No dependency/federation versions,
 backend code or shell configuration changed. User's pre-existing package.json and
@@ -24,7 +32,7 @@ package-lock.json edits were preserved. No commit, push or deployment performed.
 | AC-004 | API lifecycle and archive/delete confirmation tests | PASS; live mutations pending |
 | AC-005 | production build; local bundle consumed through admin shell | PASS; base route and legacy hello-world mount new library |
 | Full unit suite | npm test -- --watch=false --browsers=ChromeHeadless | 16 tests passed |
-| Production build | npm run build | PASS; 4.70 kB component style exceeds 4 kB warning, below 8 kB error |
+| Production build | npm run build | PASS; no component-style budget warning |
 | Live gateway/read | https://admin.ngx-workshop.io/admin-asset-manager | PASS; empty asset library, no HTTP error |
 | Responsive/dialog UX | Browser inspection at narrow and desktop widths; metadata/upload dialogs | PASS; host theme used; empty library only |
 | Whitespace | git diff --check | PASS |
