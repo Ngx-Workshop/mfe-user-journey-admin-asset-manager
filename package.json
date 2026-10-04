@@ -33,7 +33,7 @@
     "@tmdjr/ngx-user-metadata": "^21.0.4",
     "@tmdjr/ngx-shared-headers": "21.0.5",
     "@tmdjr/seed-service-nestjs-contracts": "0.0.7",
-    "@tmdjr/service-uploader-contracts": "0.0.7",
+    "@tmdjr/service-uploader-contracts": "0.0.8",
     "@types/jasmine": "~5.1.0",
     "jasmine-core": "~5.7.0",
     "karma": "~6.4.0",

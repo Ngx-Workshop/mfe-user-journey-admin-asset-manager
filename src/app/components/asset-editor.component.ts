@@ -51,8 +51,8 @@ import { assetForm, metadata } from '../services/asset-form';
     <mat-dialog-content class="asset-editor">
       @if (data.upload) {
       <p class="asset-editor__guidance">
-        Receive a file up to 25 MiB. Durable storage is pending; files
-        cannot be previewed or downloaded yet.
+        Upload a file up to 25 MiB. Stored images are available for
+        preview in the library.
       </p>
       <label class="asset-editor__file-label" for="asset-file">
         Choose file

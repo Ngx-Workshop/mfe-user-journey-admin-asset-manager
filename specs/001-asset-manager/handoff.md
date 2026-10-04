@@ -5,10 +5,11 @@ Updated: 2026-10-03 · [Spec](spec.md) · [Plan](plan.md) · [Tasks](tasks.md)
 ## Delivered behavior
 Replaced the example-document UI and services with a responsive Material asset
 library. Supports search/filtering, overview counts, metadata create/edit and
-explicit clears, file receipt/progress, current server details, archive/restore,
+explicit clears, file upload/progress, current server details, archive/restore,
 and confirmed permanent deletion. Errors preserve entered input and server-owned
-state, with retry and session guidance. Upload receipt accurately reports pending
-storage. Published uploader 0.0.7 schema types define requests/results.
+state, with retry and session guidance. Uploaded image cards preview the
+`storageUrl` supplied by the service. Published uploader 0.0.8 schema types define
+requests/results.
 
 AssetManagerComponent now coordinates dialogs and user intentions. Its
 component-scoped AssetManagerStore owns API workflows, private writable signals,
@@ -28,7 +29,7 @@ package-lock.json edits were preserved. No commit, push or deployment performed.
 | --- | --- | --- |
 | AC-001 | ChromeHeadless list/filter/retry tests | PASS; mock responses |
 | AC-002 | form and editor failure/retry tests; live blank-name dialog check | PASS; no live save |
-| AC-003 | multipart, limits, upload events and accepted-response tests; live intake dialog | PASS; no live upload |
+| AC-003 | multipart, limits, upload events and image-preview rendering tests | PASS; mock responses |
 | AC-004 | API lifecycle and archive/delete confirmation tests | PASS; live mutations pending |
 | AC-005 | production build; local bundle consumed through admin shell | PASS; base route and legacy hello-world mount new library |
 | Full unit suite | npm test -- --watch=false --browsers=ChromeHeadless | 16 tests passed |
@@ -44,10 +45,10 @@ reloading after build completed resolved it.
 
 ## Contract and remaining integration
 service-uploader/gateway already expose the consumed route and installed contract.
-No producer change is needed for implemented behavior. Durable storage,
-preview/download, or attaching uploads to existing records need new producer
-contracts and are outside this feature. Upload endpoint does not accept tags;
-use Edit metadata after receipt.
+Uploader persists files in S3 and AssetDto `storageUrl` enables image previews;
+direct file access depends on storage permissions. Upload endpoint does not accept
+tags; use Edit metadata after receipt. Attaching uploads to existing records remains
+outside this feature.
 
 X001 remaining: exercise create/edit/upload/archive/restore/delete against
 explicit disposable data in a test environment, including a populated library.

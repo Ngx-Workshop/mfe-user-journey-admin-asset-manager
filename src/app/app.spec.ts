@@ -20,7 +20,8 @@ const logo: Asset = {
   tags: ['branding'],
   archived: false,
   version: 0,
-  storageStatus: 'PENDING_STORAGE',
+  storageStatus: 'READY',
+  storageUrl: 'https://assets.example.test/logo.svg',
   originalFilename: 'logo.svg',
   mediaType: 'image/svg+xml',
   sizeBytes: 100,
@@ -33,7 +34,7 @@ const record: Asset = {
   name: 'Course resource',
   tags: [],
   archived: true,
-  storageStatus: 'AWAITING_UPLOAD',
+  storageStatus: 'STORAGE_FAILED',
   originalFilename: undefined,
   mediaType: undefined,
 };
@@ -76,8 +77,16 @@ describe('Asset manager', () => {
     );
   });
   it('filters archive, media, storage and case-insensitive filename/tag searches', () => {
-    const { manager } = setup();
+    const { fixture, manager } = setup();
     http.expectOne('/api/uploader').flush([logo, record]);
+    fixture.detectChanges();
+    const preview = fixture.nativeElement.querySelector(
+      '.asset-card__preview'
+    ) as HTMLImageElement;
+    expect(preview.src).toBe(
+      'https://assets.example.test/logo.svg'
+    );
+    expect(preview.alt).toBe(logo.name);
     expect(manager.filtered()).toEqual([logo]);
     manager.setQuery('BRANDING');
     expect(manager.filtered()).toEqual([logo]);
@@ -86,7 +95,7 @@ describe('Asset manager', () => {
     manager.setTypeFilter('video');
     expect(manager.filtered()).toEqual([]);
     manager.clearFilters();
-    manager.setStorageFilter('AWAITING_UPLOAD');
+    manager.setStorageFilter('STORAGE_FAILED');
     expect(manager.filtered()).toEqual([]);
     manager.setStorageFilter('all');
     manager.setArchiveFilter('archived');

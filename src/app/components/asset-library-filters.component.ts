@@ -71,8 +71,9 @@ import {
           (selectionChange)="storageFilterChange.emit($event.value)"
         >
           <mat-option value="all">All statuses</mat-option>
-          <mat-option value="AWAITING_UPLOAD">Awaiting upload</mat-option>
-          <mat-option value="PENDING_STORAGE">Pending storage</mat-option>
+          <mat-option value="PENDING_STORAGE">Processing storage</mat-option>
+          <mat-option value="READY">Stored</mat-option>
+          <mat-option value="STORAGE_FAILED">Storage failed</mat-option>
         </mat-select>
       </mat-form-field>
     </div>

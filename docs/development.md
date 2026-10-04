@@ -30,9 +30,11 @@ Authenticated shell consumed the local bundle, returned an empty library, and
 rendered dialogs and blank-name validation. Narrow and desktop layouts inspected.
 Live mutations and a library containing real assets were not exercised.
 
-Service supports file intake metadata only: durable storage, preview, download,
-and attaching a file to an existing record remain producer-owned work. The shell
-console also reports inherited Angular Material component ID collisions across
+Uploader persists uploaded files in S3. The library previews image assets using
+the contract's `storageUrl`; direct stored-file access depends on object
+permissions. Replacement uploads and attaching a file to an existing record remain
+producer-owned work. The shell console also reports inherited Angular Material
+component ID collisions across
 remote bundles; observed dialogs work, but shared subpath alignment is external
 integration work if those warnings become disruptive.
 

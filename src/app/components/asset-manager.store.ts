@@ -57,7 +57,7 @@ export class AssetManagerStore {
   readonly receivedCount = computed(
     () =>
       this.assets().filter(
-        (asset) => asset.storageStatus === 'PENDING_STORAGE'
+        (asset) => asset.storageStatus === 'READY'
       ).length
   );
   readonly filtered = computed(() => {
@@ -117,7 +117,7 @@ export class AssetManagerStore {
     ]);
     this.noticeState.set(
       uploaded
-        ? 'File received. Durable storage is pending.'
+        ? 'File uploaded and stored.'
         : 'Asset saved.'
     );
   }

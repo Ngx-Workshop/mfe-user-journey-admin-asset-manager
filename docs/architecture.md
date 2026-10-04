@@ -34,7 +34,7 @@ Material dialogs retain input on failure and block closing during writes. Local
 assets change after server success.
 
 ## Published contracts
-Installed `@tmdjr/service-uploader-contracts` 0.0.7 `components.schemas` supplies
+Installed `@tmdjr/service-uploader-contracts` 0.0.8 `components.schemas` supplies
 AssetDto, CreateAssetDto and UpdateAssetDto. All calls are same-origin and include
 credentials. Service authorization is authoritative.
 
@@ -54,9 +54,12 @@ descriptions and empty tags to clear them. Files must be nonempty, at most 25
 MiB, filename max 255 characters. Multipart fields omit blank optional metadata.
 Upload does not accept tags; use Edit metadata after receipt to add tags.
 
-Storage status is AWAITING_UPLOAD or PENDING_STORAGE. The service currently
-records receipt metadata without durable file storage. No preview/download URL,
-replacement upload or file attachment to existing records is part of the contract.
+The service stores uploaded files in S3 and provides `storageUrl` for the stored
+object. Image cards display that URL as a preview when it is present. The UI
+supports PENDING_STORAGE, READY and STORAGE_FAILED status filtering; legacy
+AWAITING_UPLOAD records display as storage unavailable but are not offered as a
+new filter state. Replacement upload and file attachment to an existing record are
+not part of the contract.
 
 ## Host and gateway integration
 Federation name `mfe-user-journey-admin-asset-manager`, entry `remoteEntry.js`,

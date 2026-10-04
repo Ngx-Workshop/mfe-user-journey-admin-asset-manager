@@ -26,10 +26,10 @@ import { MatIconModule } from '@angular/material/icon';
         </span>
       </article>
       <article class="asset-summary__item">
-        <mat-icon class="asset-summary__icon">cloud_upload</mat-icon>
+        <mat-icon class="asset-summary__icon">cloud_done</mat-icon>
         <span>
           <strong class="asset-summary__value">{{ received() }}</strong>
-          <small class="asset-summary__label">Pending storage</small>
+          <small class="asset-summary__label">Stored assets</small>
         </span>
       </article>
       <article class="asset-summary__item">

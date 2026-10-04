@@ -26,13 +26,15 @@ import { Asset, formatBytes } from '../services/asset-api.service';
         <dt>Asset ID</dt>
         <dd>{{ asset._id }}</dd>
         <dt>Storage</dt>
-        <dd>
-          {{
-            asset.storageStatus === 'PENDING_STORAGE'
-              ? 'Pending storage'
-              : 'Awaiting upload'
-          }}
-        </dd>
+        <dd>{{ storageLabel }}</dd>
+        @if (asset.storageUrl) {
+          <dt>Stored file</dt>
+          <dd>
+            <a [href]="asset.storageUrl" target="_blank" rel="noopener">
+              Open stored file
+            </a>
+          </dd>
+        }
         <dt>Visibility</dt>
         <dd>{{ asset.archived ? 'Archived' : 'Active' }}</dd>
         <dt>Original filename</dt>
@@ -56,10 +58,6 @@ import { Asset, formatBytes } from '../services/asset-api.service';
         <dt>Received</dt>
         <dd>{{ (asset.receivedAt | date : 'medium') || '—' }}</dd>
       </dl>
-      <p class="asset-details__note">
-        File receipt records metadata. Durable storage, preview and
-        download are not yet available.
-      </p>
     </mat-dialog-content>
     <mat-dialog-actions align="end"
       ><button mat-button mat-dialog-close>
@@ -104,6 +102,16 @@ import { Asset, formatBytes } from '../services/asset-api.service';
 export class AssetDetailsComponent {
   readonly asset = inject<Asset>(MAT_DIALOG_DATA);
   readonly bytes = formatBytes;
+  get storageLabel(): string {
+    return (
+      {
+        READY: 'Stored',
+        PENDING_STORAGE: 'Processing storage',
+        STORAGE_FAILED: 'Storage failed',
+        AWAITING_UPLOAD: 'Storage unavailable',
+      }[this.asset.storageStatus]
+    );
+  }
 }
 @Component({
   selector: 'ngx-delete-asset',

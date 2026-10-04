@@ -8,5 +8,6 @@ export type AssetTypeFilter =
   | 'record';
 export type StorageFilter =
   | 'all'
-  | 'AWAITING_UPLOAD'
-  | 'PENDING_STORAGE';
+  | 'PENDING_STORAGE'
+  | 'READY'
+  | 'STORAGE_FAILED';

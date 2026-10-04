@@ -9,6 +9,9 @@ Updated: 2026-10-03 · [Spec](spec.md) · [Plan](plan.md)
   orchestration, encapsulated component-scoped state and typed presentational
   boundaries; split library filters/results into focused components; verify tests
   and build.
+- [x] T006: Render `storageUrl` previews for image cards and update storage-state
+  messaging/filtering for durable uploads (FR-003/004); verify component rendering
+  through the library test and production build.
 - [ ] X001: Verify new bundle in authenticated shell against deployed uploader. Owner:
   mfe-shell-admin/service-uploader; no production writes during verification.
 

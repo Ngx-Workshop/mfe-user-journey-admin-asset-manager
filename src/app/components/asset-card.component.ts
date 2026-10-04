@@ -9,21 +9,13 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import {
-  Asset,
-  formatBytes,
-} from '../services/asset-api.service';
+import { Asset, formatBytes } from '../services/asset-api.service';
 import { mediaCategory } from './asset-manager.utils';
 
 @Component({
   selector: 'ngx-asset-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    DatePipe,
-    MatButtonModule,
-    MatIconModule,
-    MatMenuModule,
-  ],
+  imports: [DatePipe, MatButtonModule, MatIconModule, MatMenuModule],
   template: `
     <article
       class="asset-card"
@@ -34,10 +26,20 @@ import { mediaCategory } from './asset-manager.utils';
         class="asset-card__visual"
         [class.asset-card__visual--image]="category() === 'image'"
       >
-        <mat-icon class="asset-card__type-icon">{{ icon() }}</mat-icon>
+        @if (previewUrl()) {
+        <img
+          class="asset-card__preview"
+          [src]="previewUrl()"
+          [alt]="asset().name"
+        />
+        } @else {
+        <mat-icon class="asset-card__type-icon">{{
+          icon()
+        }}</mat-icon>
         <span class="asset-card__media-type">
           {{ asset().mediaType || 'METADATA RECORD' }}
         </span>
+        }
         <button
           class="asset-card__menu-trigger"
           mat-icon-button
@@ -58,7 +60,7 @@ import { mediaCategory } from './asset-manager.utils';
             {{ asset().name }}
           </button>
           @if (asset().archived) {
-            <span class="asset-card__badge">Archived</span>
+          <span class="asset-card__badge">Archived</span>
           }
         </div>
         <p class="asset-card__description">
@@ -70,32 +72,30 @@ import { mediaCategory } from './asset-manager.utils';
         </p>
         <div class="asset-card__tags">
           @for (tag of asset().tags.slice(0, 3); track $index) {
-            <span class="asset-card__tag">{{ tag }}</span>
-          }
-          @if (asset().tags.length > 3) {
-            <span class="asset-card__tag">
-              +{{ asset().tags.length - 3 }}
-            </span>
+          <span class="asset-card__tag">{{ tag }}</span>
+          } @if (asset().tags.length > 3) {
+          <span class="asset-card__tag">
+            +{{ asset().tags.length - 3 }}
+          </span>
           }
         </div>
         <div class="asset-card__footer">
           <span class="asset-card__storage">
             <i
               class="asset-card__status"
-              [class.asset-card__status--pending]="
-                asset().storageStatus === 'PENDING_STORAGE'
+              [class.asset-card__status--ready]="
+                asset().storageStatus === 'READY'
+              "
+              [class.asset-card__status--failed]="
+                asset().storageStatus === 'STORAGE_FAILED'
               "
             ></i>
-            {{
-              asset().storageStatus === 'PENDING_STORAGE'
-                ? 'Pending storage'
-                : 'Awaiting upload'
-            }}
+            {{ storageLabel() }}
           </span>
           <span>{{ bytes(asset().sizeBytes) }}</span>
         </div>
         <p class="asset-card__date">
-          Updated {{ asset().updatedAt | date: 'mediumDate' }}
+          Updated {{ asset().updatedAt | date : 'mediumDate' }}
         </p>
       </div>
       <mat-menu #actions="matMenu">
@@ -148,6 +148,13 @@ import { mediaCategory } from './asset-manager.utils';
       color: var(--mat-sys-primary, #6750a4);
       font-size: 2.625rem;
       opacity: 0.8;
+    }
+
+    .asset-card__preview {
+      width: 100%;
+      min-height: 8.75rem;
+      max-height: 8rem;
+      object-fit: cover;
     }
 
     .asset-card__media-type {
@@ -253,8 +260,12 @@ import { mediaCategory } from './asset-manager.utils';
       background: #858391;
     }
 
-    .asset-card__status--pending {
-      background: #c88c26;
+    .asset-card__status--ready {
+      background: #2e7d32;
+    }
+
+    .asset-card__status--failed {
+      background: var(--mat-sys-error, #b3261e);
     }
 
     .asset-card__date {
@@ -273,14 +284,29 @@ export class AssetCardComponent {
   readonly remove = output<void>();
   readonly bytes = formatBytes;
   readonly category = computed(() => mediaCategory(this.asset()));
+  readonly previewUrl = computed(() => {
+    const asset = this.asset();
+    return mediaCategory(asset) === 'image' && asset.storageUrl
+      ? asset.storageUrl
+      : null;
+  });
+  readonly storageLabel = computed(
+    () =>
+      ({
+        READY: 'Stored',
+        PENDING_STORAGE: 'Processing storage',
+        STORAGE_FAILED: 'Storage failed',
+        AWAITING_UPLOAD: 'Storage unavailable',
+      }[this.asset().storageStatus])
+  );
   readonly icon = computed(
     () =>
-    ({
-      image: 'image',
-      video: 'movie',
-      audio: 'music_note',
-      document: 'description',
-      record: 'inventory_2',
-    })[this.category()]
+      ({
+        image: 'image',
+        video: 'movie',
+        audio: 'music_note',
+        document: 'description',
+        record: 'inventory_2',
+      }[this.category()])
   );
 }

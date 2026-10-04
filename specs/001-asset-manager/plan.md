@@ -29,14 +29,16 @@ All six constitution principles satisfied: focused remote, compatible exposures,
 Angular/Material, server ownership, behavior tests and local documentation.
 
 ## Contracts and delivery
-Service-uploader 0.0.7 schemas define AssetDto/CreateAssetDto/UpdateAssetDto.
+Service-uploader 0.0.8 schemas define AssetDto/CreateAssetDto/UpdateAssetDto.
 Upload accepts file/name/description only; metadata create/edit accepts tags.
-202 means PENDING_STORAGE, not durable binary storage. No migrations needed.
+Uploaded files persist in S3 and AssetDto exposes `storageUrl`; image cards render
+that URL as a preview. No migrations needed.
 Shell supplies HttpClient/animations and authenticated same-origin requests.
 Gateway configuration already contains /api/uploader; live availability unverified.
 
 ## Verification and risks
 Build production federation bundle; run mocked HTTP/form/state tests; inspect local
 UI and hosted shell when possible. Use no production mutations for verification.
-Potential service/auth outage must leave useful retry/error states. No preview or
-file-to-existing-record operation invented; these require producer changes.
+Potential service/auth outage must leave useful retry/error states. Preview applies
+only to image assets with a returned storage URL; file-to-existing-record operation
+requires a producer change.
