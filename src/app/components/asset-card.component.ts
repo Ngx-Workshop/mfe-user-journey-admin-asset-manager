@@ -95,6 +95,7 @@ import { mediaCategory } from './asset-manager.utils';
           <span>{{ bytes(asset().sizeBytes) }}</span>
         </div>
         <p class="asset-card__date">
+          Folder: {{ folderName() }} ·
           Updated {{ asset().updatedAt | date : 'mediumDate' }}
         </p>
       </div>
@@ -105,7 +106,7 @@ import { mediaCategory } from './asset-manager.utils';
         </button>
         <button mat-menu-item (click)="edit.emit()">
           <mat-icon>edit</mat-icon>
-          Edit metadata
+          Edit / move asset
         </button>
         <button mat-menu-item (click)="archive.emit()">
           <mat-icon>
@@ -277,6 +278,7 @@ import { mediaCategory } from './asset-manager.utils';
 })
 export class AssetCardComponent {
   readonly asset = input.required<Asset>();
+  readonly folderName = input('Root');
   readonly pending = input(false);
   readonly details = output<void>();
   readonly edit = output<void>();

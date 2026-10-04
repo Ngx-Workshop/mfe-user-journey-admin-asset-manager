@@ -23,11 +23,13 @@ describe('asset metadata form', () => {
       name: ' Logo ',
       description: ' ',
       tags: ' brand, workshop,brand, ',
+      folderId: null,
     });
     expect(metadata(form)).toEqual({
       name: 'Logo',
       description: '',
       tags: ['brand', 'workshop'],
+      folderId: null,
     });
     form.controls.tags.setValue('');
     expect(metadata(form).tags).toEqual([]);

@@ -10,11 +10,14 @@ import { EMPTY, Observable, catchError, finalize } from 'rxjs';
 import {
   Asset,
   AssetApiService,
+  Folder,
   assetError,
 } from '../services/asset-api.service';
 import {
   ArchiveFilter,
   AssetTypeFilter,
+  FolderFilter,
+  FolderResult,
   StorageFilter,
 } from './asset-manager.models';
 import { mediaCategory } from './asset-manager.utils';
@@ -25,6 +28,10 @@ export class AssetManagerStore {
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly assetsState = signal<readonly Asset[]>([]);
+  private readonly foldersState = signal<readonly Folder[]>([]);
+  private readonly foldersLoadingState = signal(false);
+  private readonly foldersErrorState = signal('');
+  private readonly folderFilterState = signal<FolderFilter>('all');
   private readonly loadingState = signal(false);
   private readonly errorState = signal('');
   private readonly noticeState = signal('');
@@ -39,6 +46,10 @@ export class AssetManagerStore {
   );
 
   readonly assets = this.assetsState.asReadonly();
+  readonly folders = this.foldersState.asReadonly();
+  readonly foldersLoading = this.foldersLoadingState.asReadonly();
+  readonly foldersError = this.foldersErrorState.asReadonly();
+  readonly folderFilter = this.folderFilterState.asReadonly();
   readonly loading = this.loadingState.asReadonly();
   readonly error = this.errorState.asReadonly();
   readonly notice = this.noticeState.asReadonly();
@@ -64,6 +75,7 @@ export class AssetManagerStore {
     const query = this.query().trim().toLowerCase();
     return this.assets().filter(
       (asset) =>
+        (this.folderFilter() === 'all' || (asset.folderId ?? null) === this.folderFilter()) &&
         this.matchesArchiveFilter(asset) &&
         this.matchesTypeFilter(asset) &&
         this.matchesStorageFilter(asset) &&
@@ -87,6 +99,42 @@ export class AssetManagerStore {
       });
   }
 
+  refreshFolders(): void {
+    if (this.foldersLoading()) return;
+    this.foldersLoadingState.set(true);
+    this.foldersErrorState.set('');
+    this.api.listFolders().pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.foldersLoadingState.set(false))
+    ).subscribe({
+      next: (folders) => {
+        this.foldersState.set(folders);
+        const selected = this.folderFilter();
+        if (selected !== 'all' && selected !== null && !folders.some((folder) => folder._id === selected))
+          this.folderFilterState.set('all');
+      },
+      error: (error: unknown) => this.foldersErrorState.set(assetError(error, 'folder-list')),
+    });
+  }
+
+  setFolderFilter(folder: FolderFilter): void {
+    this.folderFilterState.set(folder);
+  }
+
+  saveFolder(result: FolderResult): void {
+    if ('saved' in result) {
+      this.foldersState.update((folders) => [
+        ...folders.filter((folder) => folder._id !== result.saved._id),
+        result.saved,
+      ]);
+      this.noticeState.set('Folder saved.');
+    } else {
+      this.foldersState.update((folders) => folders.filter((folder) => folder._id !== result.removed));
+      if (this.folderFilter() === result.removed) this.folderFilterState.set('all');
+      this.noticeState.set('Folder deleted.');
+    }
+  }
+
   setQuery(query: string): void {
     this.queryState.set(query);
   }
@@ -104,6 +152,7 @@ export class AssetManagerStore {
   }
 
   clearFilters(): void {
+    this.folderFilterState.set('all');
     this.queryState.set('');
     this.archiveFilterState.set('active');
     this.typeFilterState.set('all');

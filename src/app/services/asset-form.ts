@@ -24,11 +24,12 @@ function tagsValidator(
     ? { tags: true }
     : null;
 }
-function nonblank(control: AbstractControl): ValidationErrors | null {
+export function nonblank(control: AbstractControl): ValidationErrors | null {
   return String(control.value).trim() ? null : { required: true };
 }
-export function assetForm(asset?: Asset, upload = false) {
+export function assetForm(asset?: Asset, upload = false, folderId: string | null = null) {
   return new FormGroup({
+    folderId: new FormControl<string | null>(asset ? asset.folderId ?? null : folderId),
     name: new FormControl(asset?.name ?? '', {
       nonNullable: true,
       validators: [
@@ -54,5 +55,6 @@ export function metadata(
     name: value.name.trim(),
     description: value.description.trim(),
     tags: parseTags(value.tags),
+    folderId: value.folderId,
   };
 }

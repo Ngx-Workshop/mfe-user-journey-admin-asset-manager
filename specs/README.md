@@ -11,6 +11,7 @@ below with relative links. A feature folder contains `spec.md`, `plan.md`,
 | Feature | Status | Spec | Plan | Tasks | Handoff |
 | --- | --- | --- | --- | --- | --- |
 | 001 Asset Manager | Implemented; live writes pending | [Spec](001-asset-manager/spec.md) | [Plan](001-asset-manager/plan.md) | [Tasks](001-asset-manager/tasks.md) | [Handoff](001-asset-manager/handoff.md) | — |
+| 002 Folders and duplicates | Implemented; integration pending | [Spec](002-folders-and-duplicates/spec.md) | [Plan](002-folders-and-duplicates/plan.md) | [Tasks](002-folders-and-duplicates/tasks.md) | [Handoff](002-folders-and-duplicates/handoff.md) |
 
 Keep one row per feature, retain completed records for rationale, and update
 status when work changes. Select work from the user's request and this index;

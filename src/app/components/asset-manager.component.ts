@@ -8,18 +8,26 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { Asset } from '../services/asset-api.service';
+import {
+  Asset,
+  Folder,
+  folderLabel,
+} from '../services/asset-api.service';
 import {
   AssetDetailsComponent,
   DeleteAssetComponent,
 } from './asset-details.component';
 import { AssetEditorComponent } from './asset-editor.component';
+import { AssetFolderBrowserComponent } from './asset-folder-browser.component';
+import { AssetFolderEditorComponent } from './asset-folder-editor.component';
 import { AssetLibraryComponent } from './asset-library.component';
 import { MfeAssetManagerHeader } from './asset-manager-header.component';
 import { AssetManagerSummaryComponent } from './asset-manager-summary.component';
 import {
   ArchiveFilter,
   AssetTypeFilter,
+  FolderEditorData,
+  FolderResult,
   StorageFilter,
 } from './asset-manager.models';
 import { AssetManagerStore } from './asset-manager.store';
@@ -33,6 +41,7 @@ import { AssetManagerStore } from './asset-manager.store';
     MatButtonModule,
     MatIconModule,
     MfeAssetManagerHeader,
+    AssetFolderBrowserComponent,
   ],
   providers: [AssetManagerStore],
   template: `
@@ -55,6 +64,23 @@ import { AssetManagerStore } from './asset-manager.store';
         [received]="receivedCount()"
         [archived]="archivedCount()"
       />
+      <ngx-asset-folder-browser
+        [folders]="store.folders()"
+        [selected]="store.folderFilter()"
+        [loading]="store.foldersLoading()"
+        [error]="store.foldersError()"
+        (selectionChange)="store.setFolderFilter($event)"
+        (refresh)="store.refreshFolders()"
+        (create)="editFolder()"
+        (rename)="editFolder($event)"
+        (remove)="deleteFolder($event)"
+      />
+      <p class="asset-manager__storage-note">
+        <mat-icon>info_outline</mat-icon>
+        Folders organize assets without changing stored URLs.
+        Identical file content cannot be uploaded twice, including
+        archived assets.
+      </p>
       <ngx-asset-library
         [store]="store"
         (refresh)="refresh()"
@@ -69,11 +95,6 @@ import { AssetManagerStore } from './asset-manager.store';
         (typeFilterChange)="setTypeFilter($event)"
         (storageFilterChange)="setStorageFilter($event)"
       />
-      <p class="asset-manager__storage-note">
-        <mat-icon>info_outline</mat-icon>
-        Files are received as pending storage. Preview and download
-        will be available when durable storage is supported.
-      </p>
     </main>
   `,
   styles: `
@@ -106,9 +127,8 @@ import { AssetManagerStore } from './asset-manager.store';
     .asset-manager__storage-note {
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       gap: 0.5rem;
-      margin-top: 1.375rem;
       font-size: 0.75rem;
       line-height: 1.6;
       opacity: 0.65;
@@ -156,6 +176,7 @@ export class AssetManagerComponent {
 
   refresh(): void {
     this.store.refresh();
+    this.store.refreshFolders();
   }
 
   clearFilters(): void {
@@ -181,7 +202,15 @@ export class AssetManagerComponent {
   edit(asset?: Asset, upload = false): void {
     this.dialog
       .open(AssetEditorComponent, {
-        data: { asset, upload },
+        data: {
+          asset,
+          upload,
+          folders: this.store.folders(),
+          folderId:
+            this.store.folderFilter() === 'all'
+              ? null
+              : this.store.folderFilter(),
+        },
         width: '560px',
         maxWidth: '95vw',
       })
@@ -199,7 +228,13 @@ export class AssetManagerComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((fresh) => {
         this.dialog.open(AssetDetailsComponent, {
-          data: fresh,
+          data: {
+            asset: fresh,
+            folderName: folderLabel(
+              fresh.folderId,
+              this.store.folders()
+            ),
+          },
           width: '640px',
           maxWidth: '95vw',
         });
@@ -208,6 +243,28 @@ export class AssetManagerComponent {
 
   archive(asset: Asset): void {
     this.store.archive(asset);
+  }
+
+  editFolder(folder?: Folder): void {
+    this.openFolderEditor({ folder });
+  }
+
+  deleteFolder(folder: Folder): void {
+    this.openFolderEditor({ folder, remove: true });
+  }
+
+  private openFolderEditor(data: FolderEditorData): void {
+    this.dialog
+      .open(AssetFolderEditorComponent, {
+        data,
+        width: '440px',
+        maxWidth: '95vw',
+      })
+      .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((result: FolderResult | undefined) => {
+        if (result) this.store.saveFolder(result);
+      });
   }
 
   delete(asset: Asset): void {

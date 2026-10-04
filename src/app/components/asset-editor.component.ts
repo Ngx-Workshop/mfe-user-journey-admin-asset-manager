@@ -17,10 +17,12 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSelectModule } from '@angular/material/select';
 import { finalize } from 'rxjs';
 import {
   Asset,
   AssetApiService,
+  Folder,
   assetError,
   fileError,
   formatBytes,
@@ -37,6 +39,7 @@ import { assetForm, metadata } from '../services/asset-form';
     MatFormFieldModule,
     MatInputModule,
     MatProgressBarModule,
+    MatSelectModule,
   ],
   template: `
     <h2 mat-dialog-title class="asset-editor__title">
@@ -52,7 +55,8 @@ import { assetForm, metadata } from '../services/asset-form';
       @if (data.upload) {
       <p class="asset-editor__guidance">
         Upload a file up to 25 MiB. Stored images are available for
-        preview in the library.
+        preview in the library. Identical content is rejected across all
+        folders, including archived assets.
       </p>
       <label class="asset-editor__file-label" for="asset-file">
         Choose file
@@ -75,6 +79,21 @@ import { assetForm, metadata } from '../services/asset-form';
         (ngSubmit)="save()"
         id="asset-editor-form"
       >
+        <mat-form-field class="asset-editor__field" appearance="outline">
+          <mat-label>Folder</mat-label>
+          <mat-select formControlName="folderId" [canSelectNullableOptions]="true">
+            <mat-option [value]="null">Root</mat-option>
+            @for (folder of data.folders ?? []; track folder._id) {
+              <mat-option [value]="folder._id">{{ folder.name }}</mat-option>
+            }
+            @if (missingFolderId) {
+              <mat-option [value]="missingFolderId" disabled>
+                Unavailable folder ({{ missingFolderId }})
+              </mat-option>
+            }
+          </mat-select>
+          <mat-hint>Moving an asset does not change its stored URL.</mat-hint>
+        </mat-form-field>
         <mat-form-field
           class="asset-editor__field"
           appearance="outline"
@@ -175,13 +194,16 @@ import { assetForm, metadata } from '../services/asset-form';
   ],
 })
 export class AssetEditorComponent {
-  readonly data = inject<{ asset?: Asset; upload?: boolean }>(
+  readonly data = inject<{ asset?: Asset; upload?: boolean; folders?: readonly Folder[]; folderId?: string | null }>(
     MAT_DIALOG_DATA
   );
   readonly ref = inject(MatDialogRef<AssetEditorComponent, Asset>);
   private readonly api = inject(AssetApiService);
   private readonly destroyRef = inject(DestroyRef);
-  readonly form = assetForm(this.data.asset, this.data.upload);
+  readonly form = assetForm(this.data.asset, this.data.upload, this.data.folderId);
+  readonly missingFolderId = this.data.asset?.folderId &&
+    !this.data.folders?.some((folder) => folder._id === this.data.asset?.folderId)
+    ? this.data.asset.folderId : null;
   readonly busy = signal(false);
   readonly file = signal<File | null>(null);
   readonly error = signal('');
@@ -200,6 +222,7 @@ export class AssetEditorComponent {
     if (this.form.invalid || (this.data.upload && !this.file()))
       return;
     this.error.set('');
+    this.progress.set(null);
     this.busy.set(true);
     this.form.disable();
     this.ref.disableClose = true;
@@ -211,7 +234,7 @@ export class AssetEditorComponent {
     if (this.data.upload) {
       const values = this.form.getRawValue();
       this.api
-        .upload(this.file()!, values.name, values.description)
+        .upload(this.file()!, values.name, values.description, values.folderId)
         .pipe(takeUntilDestroyed(this.destroyRef), finalize(done))
         .subscribe({
           next: (event) => {
@@ -224,7 +247,7 @@ export class AssetEditorComponent {
             if (event.type === HttpEventType.Response && event.body)
               this.ref.close(event.body);
           },
-          error: (error) => this.error.set(assetError(error)),
+          error: (error) => this.error.set(assetError(error, 'upload')),
         });
     } else {
       const request = this.data.asset
@@ -234,7 +257,7 @@ export class AssetEditorComponent {
         .pipe(takeUntilDestroyed(this.destroyRef), finalize(done))
         .subscribe({
           next: (asset) => this.ref.close(asset),
-          error: (error) => this.error.set(assetError(error)),
+          error: (error) => this.error.set(assetError(error, 'asset-save')),
         });
     }
   }

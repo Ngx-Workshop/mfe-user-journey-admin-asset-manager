@@ -25,6 +25,8 @@ import { Asset, formatBytes } from '../services/asset-api.service';
       <dl class="asset-details__list">
         <dt>Asset ID</dt>
         <dd>{{ asset._id }}</dd>
+        <dt>Folder</dt>
+        <dd>{{ data.folderName }}</dd>
         <dt>Storage</dt>
         <dd>{{ storageLabel }}</dd>
         @if (asset.storageUrl) {
@@ -100,7 +102,8 @@ import { Asset, formatBytes } from '../services/asset-api.service';
   ],
 })
 export class AssetDetailsComponent {
-  readonly asset = inject<Asset>(MAT_DIALOG_DATA);
+  readonly data = inject<{ asset: Asset; folderName: string }>(MAT_DIALOG_DATA);
+  readonly asset = this.data.asset;
   readonly bytes = formatBytes;
   get storageLabel(): string {
     return (

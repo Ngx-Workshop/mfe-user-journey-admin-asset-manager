@@ -104,6 +104,7 @@ export class AssetLibraryComponent {
         storageFilter: store.storageFilter(),
       },
       results: {
+        folders: store.folders(),
         assets: store.filtered(),
         totalAssets: store.assets().length,
         loading: store.loading(),

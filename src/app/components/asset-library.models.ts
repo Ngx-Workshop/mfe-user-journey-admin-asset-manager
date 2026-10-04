@@ -1,5 +1,5 @@
 import { Signal } from '@angular/core';
-import { Asset } from '../services/asset-api.service';
+import { Asset, Folder } from '../services/asset-api.service';
 import {
   ArchiveFilter,
   AssetTypeFilter,
@@ -8,6 +8,7 @@ import {
 
 export interface AssetLibraryStore {
   readonly assets: Signal<readonly Asset[]>;
+  readonly folders: Signal<readonly Folder[]>;
   readonly filtered: Signal<readonly Asset[]>;
   readonly loading: Signal<boolean>;
   readonly error: Signal<string>;
@@ -27,6 +28,7 @@ export interface AssetLibraryFiltersViewModel {
 }
 
 export interface AssetLibraryResultsViewModel {
+  readonly folders: readonly Folder[];
   readonly assets: readonly Asset[];
   readonly totalAssets: number;
   readonly loading: boolean;

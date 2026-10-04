@@ -1,5 +1,5 @@
 # Asset Manager architecture
-Source reviewed: 2026-10-03.
+Source reviewed: 2026-10-04.
 
 ## Responsibility and source map
 This Angular standalone remote owns the administrator asset library. It consumes
@@ -16,6 +16,7 @@ or binary persistence.
 | Summary/library composition | `src/app/components/asset-manager-summary.component.ts`, `asset-library.component.ts` |
 | Filters/results/card presentation | `src/app/components/asset-library-filters.component.ts`, `asset-library-results.component.ts`, `asset-card.component.ts` |
 | Library view-model contracts | `src/app/components/asset-library.models.ts` |
+| Folder browsing and create/rename/delete dialogs | `src/app/components/asset-folder-browser.component.ts`, `asset-folder-editor.component.ts` |
 | Filter types/media mapping | `src/app/components/asset-manager.models.ts`, `asset-manager.utils.ts` |
 | Metadata/file intake | `src/app/components/asset-editor.component.ts` |
 | Details/delete confirmation | `src/app/components/asset-details.component.ts` |
@@ -34,8 +35,8 @@ Material dialogs retain input on failure and block closing during writes. Local
 assets change after server success.
 
 ## Published contracts
-Installed `@tmdjr/service-uploader-contracts` 0.0.8 `components.schemas` supplies
-AssetDto, CreateAssetDto and UpdateAssetDto. All calls are same-origin and include
+Installed `@tmdjr/service-uploader-contracts` 0.0.11 `components.schemas` supplies
+asset and folder DTOs. All calls are same-origin and include
 credentials. Service authorization is authoritative.
 
 | Method | Browser path | Payload/result |
@@ -43,10 +44,31 @@ credentials. Service authorization is authoritative.
 | GET | `/api/uploader` | AssetDto[] |
 | GET | `/api/uploader/:id` | AssetDto |
 | POST | `/api/uploader` | CreateAssetDto → AssetDto |
-| POST | `/api/uploader/upload` | FormData file/name/description → 202 AssetDto |
+| POST | `/api/uploader/upload` | FormData file/name/description/folderId → 201 READY AssetDto |
 | PATCH | `/api/uploader/:id` | UpdateAssetDto → AssetDto |
 | PATCH | `/api/uploader/:id/archive` or `/unarchive` | AssetDto |
 | DELETE | `/api/uploader/:id` | 204, no body |
+| GET | `/api/uploader/folders` | FolderDto[] |
+| POST | `/api/uploader/folders` | CreateFolderDto → FolderDto |
+| PATCH | `/api/uploader/folders/:id` | UpdateFolderDto → FolderDto |
+| DELETE | `/api/uploader/folders/:id` | 204, no body |
+
+Folders are flat and virtual. The store loads folders independently of assets,
+with separate loading/error/retry state, and combines All folders/Root/named-folder
+selection with existing local filters. New records/uploads default to the selected
+folder (All folders defaults to Root). The asset editor handles moves and metadata:
+JSON sends explicit `folderId: null` for root; multipart omits root folderId.
+Absent/null folderId is root for legacy records. Cards and details show folder names;
+unresolved references show an unavailable-folder label with ID. Stored keys/URLs are
+never patched. Summaries remain library-wide, not restricted to the selected folder.
+
+Folder dialogs retain input on failure and apply only server-success results.
+Folder names are trimmed and nonblank; the server enforces case-insensitive
+uniqueness (409). Confirmed deletion of nonempty folders returns actionable 409
+feedback, including archived assets. Upload 409 explains content duplication across
+all folders and archived assets, keeps the chosen file/metadata and permits recovery.
+Storage failure (503) asks to retry upload; progress resets on each attempt. The
+server owns hashing, concurrency protection and failed-upload retryability.
 
 Names are trimmed, required for records, max 120 characters; descriptions max
 2000; tags max 50 with 100 characters each. Updates explicitly send blank
@@ -59,7 +81,8 @@ object. Image cards display that URL as a preview when it is present. The UI
 supports PENDING_STORAGE, READY and STORAGE_FAILED status filtering; legacy
 AWAITING_UPLOAD records display as storage unavailable but are not offered as a
 new filter state. Replacement upload and file attachment to an existing record are
-not part of the contract.
+not part of the contract. The current upload contract returns 201 after storage;
+the UI still accepts successful 202 responses and displays returned storage state.
 
 ## Host and gateway integration
 Federation name `mfe-user-journey-admin-asset-manager`, entry `remoteEntry.js`,

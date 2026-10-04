@@ -23,6 +23,18 @@ states and responsive layouts. Separate mocked coverage from live integration;
 use disposable data in an approved environment for mutation checks.
 
 ## Current verification and limitations
+2026-10-04: folder management and duplicate-upload feedback production build and
+30 ChromeHeadless tests pass. Mocked API/dialog/store tests cover folder CRUD,
+case-insensitive-name and nonempty-folder conflicts, root/destination mapping,
+combined filters, duplicate file retention, retry progress reset and 201 storage
+success. Desktop (1280px) and narrow (390px) browser checks used mocked API data:
+folder labels, rename prefill and selected-folder upload work; no horizontal
+overflow and the upload dialog fits the narrow viewport.
+The local dev server on an alternate port reports the inherited webpack
+publicHost/HMR websocket mismatch; standalone APIs have no proxy. Neither is live
+gateway verification. No authenticated folder mutations or duplicate uploads were
+run against the backend.
+
 2026-10-03: production build and 16 ChromeHeadless tests pass (execution host
 Node 24.9.0). Component styles remain below the configured warning budget after
 the orchestration/presentation refactor.
@@ -39,3 +51,4 @@ remote bundles; observed dialogs work, but shared subpath alignment is external
 integration work if those warnings become disruptive.
 
 Feature decisions and handoff: [Asset Manager](../specs/001-asset-manager/handoff.md).
+Folder/duplicate follow-up: [Folders and duplicates](../specs/002-folders-and-duplicates/handoff.md).

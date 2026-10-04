@@ -12,6 +12,7 @@ import {
   AssetApiService,
   assetError,
   fileError,
+  folderLabel,
   MAX_FILE_BYTES,
 } from './asset-api.service';
 
@@ -85,7 +86,46 @@ describe('AssetApiService', () => {
     const request = http.expectOne('/api/uploader/upload');
     expect(request.request.body.has('name')).toBeFalse();
     expect(request.request.body.has('description')).toBeFalse();
+    expect(request.request.body.has('folderId')).toBeFalse();
     request.flush({});
+  });
+  it('uses authenticated folder CRUD paths and encoded IDs', () => {
+    api.listFolders().subscribe();
+    const list = http.expectOne('/api/uploader/folders');
+    expect(list.request.withCredentials).toBeTrue();
+    list.flush([]);
+    api.createFolder({ name: 'Brand' }).subscribe();
+    const create = http.expectOne('/api/uploader/folders');
+    expect(create.request.method).toBe('POST');
+    expect(create.request.withCredentials).toBeTrue();
+    expect(create.request.body).toEqual({ name: 'Brand' });
+    create.flush({});
+    api.updateFolder('an/id', { name: 'Branding' }).subscribe();
+    const update = http.expectOne('/api/uploader/folders/an%2Fid');
+    expect(update.request.method).toBe('PATCH');
+    expect(update.request.withCredentials).toBeTrue();
+    expect(update.request.body).toEqual({ name: 'Branding' });
+    update.flush({});
+    api.removeFolder('an/id').subscribe();
+    const remove = http.expectOne('/api/uploader/folders/an%2Fid');
+    expect(remove.request.method).toBe('DELETE');
+    expect(remove.request.withCredentials).toBeTrue();
+    remove.flush(null, { status: 204, statusText: 'No Content' });
+  });
+  it('sends folder destinations for creation/upload and explicit null for root moves', () => {
+    api.create({ name: 'Logo', folderId: 'brand' }).subscribe();
+    const create = http.expectOne('/api/uploader');
+    expect(create.request.body.folderId).toBe('brand');
+    create.flush({});
+    api.upload(new File(['a'], 'a.txt'), '', '', 'brand').subscribe();
+    const upload = http.expectOne('/api/uploader/upload');
+    expect(upload.request.body.get('folderId')).toBe('brand');
+    upload.flush({}, { status: 201, statusText: 'Created' });
+    api.update('logo', { folderId: null }).subscribe();
+    const move = http.expectOne('/api/uploader/logo');
+    expect(move.request.body).toEqual({ folderId: null });
+    expect(move.request.withCredentials).toBeTrue();
+    move.flush({});
   });
 });
 describe('asset validation and errors', () => {
@@ -122,5 +162,20 @@ describe('asset validation and errors', () => {
     expect(
       assetError(new HttpErrorResponse({ status: 0 }))
     ).toContain('try again');
+  });
+  it('distinguishes duplicate uploads, folder names and nonempty folders without depending on error bodies', () => {
+    const conflict = new HttpErrorResponse({ status: 409 });
+    expect(assetError(conflict, 'upload')).toContain('Identical file content');
+    expect(assetError(conflict, 'upload')).toContain('archived');
+    expect(assetError(conflict, 'folder-save')).toContain('case-insensitive');
+    expect(assetError(conflict, 'folder-delete')).toContain('Move or delete');
+    expect(assetError(new HttpErrorResponse({ status: 503 }), 'upload')).toContain('retry the upload');
+    expect(assetError(new HttpErrorResponse({ status: 404 }), 'asset-save')).toContain('destination folder');
+    expect(assetError(new HttpErrorResponse({ status: 404 }), 'folder-list')).toContain('Folder management is unavailable');
+  });
+  it('labels legacy root assets and exposes unresolved folder references', () => {
+    expect(folderLabel(undefined, [])).toBe('Root');
+    expect(folderLabel(null, [])).toBe('Root');
+    expect(folderLabel('missing', [])).toBe('Unavailable folder (missing)');
   });
 });

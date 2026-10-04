@@ -7,7 +7,7 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { Asset } from '../services/asset-api.service';
+import { Asset, folderLabel } from '../services/asset-api.service';
 import { AssetCardComponent } from './asset-card.component';
 import { AssetLibraryResultsViewModel } from './asset-library.models';
 
@@ -57,6 +57,7 @@ import { AssetLibraryResultsViewModel } from './asset-library.models';
           @for (asset of vm.assets; track asset._id) {
             <ngx-asset-card
               [asset]="asset"
+              [folderName]="folderName(asset.folderId, vm.folders)"
               [pending]="vm.pendingIds.has(asset._id)"
               (details)="showDetails.emit(asset)"
               (edit)="edit.emit(asset)"
@@ -168,6 +169,7 @@ import { AssetLibraryResultsViewModel } from './asset-library.models';
   `,
 })
 export class AssetLibraryResultsComponent {
+  readonly folderName = folderLabel;
   readonly viewModel =
     input.required<AssetLibraryResultsViewModel>();
   readonly refresh = output<void>();

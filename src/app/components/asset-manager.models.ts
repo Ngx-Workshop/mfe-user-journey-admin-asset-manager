@@ -11,3 +11,10 @@ export type StorageFilter =
   | 'PENDING_STORAGE'
   | 'READY'
   | 'STORAGE_FAILED';
+import type { Folder } from '../services/asset-api.service';
+
+export type FolderFilter = 'all' | null | string;
+export type FolderResult = { saved: Folder } | { removed: string };
+export type FolderEditorData =
+  | { folder?: Folder; remove?: false }
+  | { folder: Folder; remove: true };
