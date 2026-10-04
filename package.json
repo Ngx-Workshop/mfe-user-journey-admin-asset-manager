@@ -32,6 +32,7 @@
     "@angular/compiler-cli": "21.1.0",
     "@tmdjr/ngx-user-metadata": "^21.0.4",
     "@tmdjr/seed-service-nestjs-contracts": "0.0.7",
+    "@tmdjr/service-uploader-contracts": "0.0.7",
     "@types/jasmine": "~5.1.0",
     "jasmine-core": "~5.7.0",
     "karma": "~6.4.0",

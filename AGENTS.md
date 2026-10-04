@@ -1,6 +1,6 @@
 # Agent entry point — mfe-user-journey-admin-asset-manager
 
-This repository is the Angular remote seed for Ngx-Workshop. Assume you have
+This repository is the Angular Asset Manager remote for Ngx-Workshop. Assume you have
 access to this repository only. The shell, gateway, services, and shared libraries
 are separate repositories; their source is not required to understand this seed.
 

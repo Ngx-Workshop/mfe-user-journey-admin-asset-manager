@@ -1,16 +1,10 @@
-import { Component } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
-import { ExampleMongodbDocListComponent } from './components/example-mongodb-doc-list.component';
-
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { AssetManagerComponent } from './components/asset-manager.component';
 @Component({
   selector: 'mfe-user-journey-admin-asset-manager',
-  imports: [MatButtonModule, ExampleMongodbDocListComponent],
-  template: `
-    <ngx-example-mongodb-doc-list></ngx-example-mongodb-doc-list>
-  `,
-  styles: [``],
+  imports: [AssetManagerComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: '<ngx-asset-manager />',
 })
 export class App {}
-
-// 👇 **IMPORTANT FOR DYMANIC LOADING**
 export default App;

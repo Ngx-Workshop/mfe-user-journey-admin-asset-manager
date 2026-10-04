@@ -1,30 +1,33 @@
-# mfe-user-journey-admin-asset-manager
+# Ngx-Workshop Asset Manager
 
-Angular user-journey remote scaffolded from the Ngx-Workshop seed-mfe-remote template.
+Angular administrator MFE for `service-uploader`, using the published
+`@tmdjr/service-uploader-contracts` 0.0.7 package.
 
-Use Node.js 22 or newer, matching the seeds.
+Browse/search/filter assets, receive files with progress, create and edit metadata,
+inspect file details, archive/restore, and confirm permanent deletion. File receipt
+is explicitly shown as pending storage; preview/download are not yet supported.
 
 ## Development
+Use Node 22 and install with `npm ci`.
 
 ```sh
-npm install
 npm run dev:bundle
-# Build:
 npm run build
-# Tests (requires Chrome):
 npm test -- --watch=false --browsers=ChromeHeadless
 ```
 
 ## Integration
+The admin shell mounts at `/admin-asset-manager`. Federation exposures remain
+`./Component` (named/default App) and `./Routes` (named Routes). The root route
+opens the library; `hello-world` remains an alias for existing bookmarks.
+Set the Orchestrator development override to `http://localhost:4201/remoteEntry.js`
+for shell integration. API requests use authenticated same-origin `/api/uploader`.
+The standalone server needs a separately configured API proxy to use real data.
 
-Register in https://admin.ngx-workshop.io/list-mfe-remotes with name mfe-user-journey-admin-asset-manager, role user-journey, and remote URL https://beta.ngx-workshop.io/remotes/mfe-user-journey-admin-asset-manager/remoteEntry.js.
-Use http://localhost:4201/remoteEntry.js for a session-local development override.
-Preserved exports: ./Component (default App) and ./Routes (named Routes).
-Deployment directory: /opt/mfe-remotes/mfe-user-journey-admin-asset-manager/.
-The example client still uses /api/example-crud and the published seed service contracts; replace them when implementing your domain.
+Upload accepts one nonempty file up to 25 MiB, optional name and description.
+Add tags through Edit metadata after receipt. Creating a record produces
+AWAITING_UPLOAD; the current service has no upload-to-existing-record endpoint.
 
-## Seed adoption
-
-This is a starting scaffold with inherited example code. Read [seed adoption](docs/seed-adoption.md), [development limitations](docs/development.md), and [integration guidance](WORKSHOP.md). Replace example behavior with your product, adapt tests, and regenerate contracts as needed.
-
-Scaffolding saves seed deployment examples in .ngx-workshop/workflows. Run ngx-workshop deploy . to publish and deploy this project. For services, the CLI updates/pushes Nginx and waits for its deployment to succeed before dispatching service deployment. Configure Actions secrets first; see the CLI deployment guide. Contracts publishing and MFE registration remain separate operations.
+See [architecture](docs/architecture.md), [development](docs/development.md), and
+[feature verification/handoff](specs/001-asset-manager/handoff.md). Deployment
+remains a separate operation; this feature does not publish or alter the registry.

@@ -1,76 +1,66 @@
-# Architecture and external context
+# Asset Manager architecture
+Source reviewed: 2026-10-03.
 
-Source baseline: 2026-09-29, commit `b5238b2`. Recheck source when changing behavior.
+## Responsibility and source map
+This Angular standalone remote owns the administrator asset library. It consumes
+service-uploader and does not own shell navigation, authentication, gateway routing
+or binary persistence.
 
-## Role in Ngx-Workshop
+| Concern | Source |
+| --- | --- |
+| Bootstrap / standalone providers | `src/main.ts`, `src/bootstrap.ts`, `src/app/app.config.ts` |
+| Federation root | `src/app/app.ts`: named and default `App` |
+| Routes | `src/app/app.routes.ts`: named `Routes`, empty path and legacy `hello-world` |
+| Library/state/filters | `src/app/components/asset-manager.component.*` |
+| Metadata/file intake | `src/app/components/asset-editor.component.ts` |
+| Details/delete confirmation | `src/app/components/asset-details.component.ts` |
+| Typed forms/mapping | `src/app/services/asset-form.ts` |
+| API/errors/file validation | `src/app/services/asset-api.service.ts` |
 
-Ngx-Workshop combines Angular micro-frontends, NestJS services, MongoDB, and an
-Nginx/gateway layer. Host shells compose structural remotes (header, navigation,
-footer) and user journeys. Services own their data; shared npm packages carry
-contracts and reusable frontend behavior between independently deployed repos.
+Components use OnPush, local signals, computed filters, typed reactive forms and
+RxJS subscriptions bound to component lifetime. Material dialogs retain input on
+failure and block closing during writes. Local assets change after server success.
 
-This seed demonstrates a list, search, create/edit dialog, and delete flow for
-example documents. It owns that UI and its HTTP client. It does not own the shell,
-remote registry, gateway routing, authentication service, or MongoDB persistence.
-
-## Local source map
-
-| Concern | Source | Current behavior |
-| --- | --- | --- |
-| Bootstrap | `src/main.ts`, `src/bootstrap.ts` | Deferred bootstrap of standalone `App` |
-| Providers | `src/app/app.config.ts` | Zoneless change detection, animations, HttpClient, reactive forms |
-| Root | `src/app/app.ts` | Renders the example list; named and default `App` exports |
-| Routes | `src/app/app.routes.ts` | Named `Routes` export; empty path redirects to `hello-world` |
-| Federation | `webpack.config.js`, `webpack.prod.config.js` | Remote `mfe-user-journey-admin-asset-manager`; `./Component` and `./Routes`; `remoteEntry.js` |
-| List/state | `src/app/components/example-mongodb-doc-list.component.ts` | Signals for documents, query, loading; computed local filtering |
-| Item view | `src/app/components/example-mongodb-doc.component.ts` | Display, edit/remove events, copy ID |
-| Dialog | `src/app/components/example-mongodb-doc-create-form-modal.component.ts` | Create/edit requests and dialog result |
-| Forms | `src/app/services/example-form.service.ts` | Typed form construction and request mapping |
-| HTTP | `src/app/services/example-crud-api.service.ts` | List, lookup, create, update, delete |
-
-The standalone bootstrap does not register `provideRouter`; the route array is
-also an integration export for a routing host. Do not assume loading a remote
-component automatically executes its standalone `appConfig` providers.
-
-## Contract boundaries
-
-| External owner | Interface this repository uses | When that owner is unavailable |
-| --- | --- | --- |
-| `mfe-shell-workshop` / `mfe-shell-admin` | `remoteEntry.js`, `./Component` (default `App`), `./Routes` (named `Routes`) | Validate exports/build locally; document host checks as unverified |
-| `service-mfe-orchestrator` and its admin UI | Registry metadata and session-local remote URL overrides | Record required entry/name/URL/route settings in the handoff |
-| `service-bff-ngx-workshop` / `nginx-ngx-workshop.io` | Browser-relative `/api/example-crud` routed to the backend | Mock HTTP in tests; request the actual gateway mapping if needed |
-| `seed-service-nestjs` | Published `@tmdjr/seed-service-nestjs-contracts` DTOs | Use installed types; document requested producer changes instead of fabricating fields |
-| `ngx-user-metadata` / platform auth | Shared `@tmdjr/ngx-user-metadata` package | Preserve singleton compatibility; this seed currently has no route guard |
-
-Repository names identify external owners, not relative filesystem dependencies.
-The frontend manifest pins the contracts package to `0.0.7`; do not assume a
-separately checked-out service manifest has the same version.
-
-### HTTP and data
-
-The intended browser boundary is `/api/example-crud`; service-native routes use
-`/example-crud`. The actual client base string currently has a trailing slash.
-See the development guide for the resulting detail-URL caveat.
+## Published contracts
+Installed `@tmdjr/service-uploader-contracts` 0.0.7 `components.schemas` supplies
+AssetDto, CreateAssetDto and UpdateAssetDto. All calls are same-origin and include
+credentials. Service authorization is authoritative.
 
 | Method | Browser path | Payload/result |
 | --- | --- | --- |
-| GET | `/api/example-crud/` | Array of `ExampleMongodbDocDto` |
-| GET | `/api/example-crud/:id` | One document |
-| POST | `/api/example-crud/` | `CreateExampleMongodbDocDto` → document |
-| PATCH | `/api/example-crud/:id` | Partial create DTO → document |
-| DELETE | `/api/example-crud/:id` | No response body |
+| GET | `/api/uploader` | AssetDto[] |
+| GET | `/api/uploader/:id` | AssetDto |
+| POST | `/api/uploader` | CreateAssetDto → AssetDto |
+| POST | `/api/uploader/upload` | FormData file/name/description → 202 AssetDto |
+| PATCH | `/api/uploader/:id` | UpdateAssetDto → AssetDto |
+| PATCH | `/api/uploader/:id/archive` or `/unarchive` | AssetDto |
+| DELETE | `/api/uploader/:id` | 204, no body |
 
-Documents include `_id`, `name`, `type`, `description`, `archived`, `version`,
-`lastUpdated`, and optional `exampleMongodbDocObject` address fields. Published
-types define the consumer contract; server validation defines accepted input.
+Names are trimmed, required for records, max 120 characters; descriptions max
+2000; tags max 50 with 100 characters each. Updates explicitly send blank
+descriptions and empty tags to clear them. Files must be nonempty, at most 25
+MiB, filename max 255 characters. Multipart fields omit blank optional metadata.
+Upload does not accept tags; use Edit metadata after receipt to add tags.
 
-### Build and deployment
+Storage status is AWAITING_UPLOAD or PENDING_STORAGE. The service currently
+records receipt metadata without durable file storage. No preview/download URL,
+replacement upload or file attachment to existing records is part of the contract.
 
-The source uses Angular/Material/CDK `21.1.0`, RxJS `7.8.2`, and strict federation
-singletons. Module Federation and `ngx-build-plus` still use 20-series versions;
-that is an inherited configuration, not a blanket compatibility guarantee.
+## Host and gateway integration
+Federation name `mfe-user-journey-admin-asset-manager`, entry `remoteEntry.js`,
+`./Component` and `./Routes` exposures are preserved. The shell mounts the remote
+at `/admin-asset-manager`, supplies HttpClient and Material animation providers,
+and owns global theming. Standalone appConfig is not executed by component loading.
+Local `src/styles.scss` provides a standalone Material theme; component CSS uses
+host Material tokens. No Angular or federation shared versions changed.
 
-`angular.json` outputs `dist/mfe-user-journey-admin-asset-manager`; local serving uses port 4201.
-The deployment workflow uses Node 22 and copies the bundle into
-`/opt/mfe-remotes/mfe-user-journey-admin-asset-manager/`. Pushes to `main` trigger deployment. Remote
-registration and gateway configuration are separate integration responsibilities.
+Gateway must forward `/api/uploader` to service-native `/uploader`. The platform
+configuration includes this mapping. The local production bundle was consumed by
+the authenticated admin shell using the existing localhost:4201 override, and
+GET returned an empty asset library on 2026-10-03. Live writes were not exercised.
+
+## Build/deployment
+Build output: `dist/mfe-user-journey-admin-asset-manager`. Node 22 matches CI.
+The dev bundle server uses port 4201 with CORS. Deployment target remains
+`/opt/mfe-remotes/mfe-user-journey-admin-asset-manager/`. Building locally does not
+publish the remote. Shell registry and gateway configuration are external owners.
