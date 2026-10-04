@@ -2,6 +2,9 @@
 name: Deploy mfe-user-journey-admin-asset-manager
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:

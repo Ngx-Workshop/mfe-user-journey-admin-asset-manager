@@ -99,6 +99,7 @@ GET returned an empty asset library on 2026-10-03. Live writes were not exercise
 
 ## Build/deployment
 Build output: `dist/mfe-user-journey-admin-asset-manager`. Node 22 matches CI.
+The deployment workflow runs on pushes to `main` and can also be started manually.
 The dev bundle server uses port 4201 with CORS. Deployment target remains
 `/opt/mfe-remotes/mfe-user-journey-admin-asset-manager/`. Building locally does not
 publish the remote. Shell registry and gateway configuration are external owners.
