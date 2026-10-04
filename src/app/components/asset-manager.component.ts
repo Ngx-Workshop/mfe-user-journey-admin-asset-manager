@@ -16,6 +16,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
+import { MfeAssetManagerHeader } from './asset-manager-header.component';
+
 import { finalize } from 'rxjs';
 import {
   Asset,
@@ -49,6 +51,7 @@ export function mediaCategory(asset: Asset): string {
     MatIconModule,
     MatMenuModule,
     MatProgressBarModule,
+    MfeAssetManagerHeader,
   ],
   templateUrl: './asset-manager.component.html',
   styleUrl: './asset-manager.component.scss',

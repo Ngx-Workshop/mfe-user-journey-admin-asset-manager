@@ -1,22 +1,14 @@
+<ngx-mfe-asset-manager-header></ngx-mfe-asset-manager-header>
+<div class="action-bar">
+  <button mat-flat-button (click)="edit()">
+    <mat-icon>add</mat-icon>Create record
+  </button>
+  <button mat-flat-button (click)="edit(undefined, true)">
+    <mat-icon>upload</mat-icon>Upload file
+  </button>
+</div>
+
 <section class="manager" aria-labelledby="asset-title">
-  <header class="page-header">
-    <div>
-      <p class="eyebrow">NGX-WORKSHOP / CONTENT LIBRARY</p>
-      <h1 id="asset-title">
-        Asset Manager<span class="title-dot">.</span>
-      </h1>
-      <p class="subtitle">
-        A home for your workshop files and creative resources.
-      </p>
-    </div>
-    <div class="header-actions">
-      <button mat-stroked-button (click)="edit()">
-        <mat-icon>add</mat-icon>Create record</button
-      ><button mat-flat-button (click)="edit(undefined, true)">
-        <mat-icon>upload</mat-icon>Upload file
-      </button>
-    </div>
-  </header>
   <div class="stats" aria-label="Library overview">
     <div>
       <mat-icon>inventory_2</mat-icon
