@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { AssetManagerComponent } from './components/asset-manager.component';
 @Component({
   selector: 'mfe-user-journey-admin-asset-manager',
-  imports: [],
+  imports: [AssetManagerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  // NEVER RENDERS BECAUSE THIS IS A MFE AND IT USES ROUTES
-  template: '',
+  template: '<ngx-asset-manager />',
 })
 export class App {}
 export default App;
