@@ -9,37 +9,21 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { Asset, formatBytes } from '../services/asset-api.service';
-import { mediaCategory } from './asset-manager.utils';
+import { Asset } from '../services/asset.models';
+import { formatBytes } from '../services/asset-utils';
+import { AssetCardVisualComponent } from './asset-card-visual.component';
 
 @Component({
   selector: 'ngx-asset-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, MatButtonModule, MatIconModule, MatMenuModule],
+  imports: [AssetCardVisualComponent, DatePipe, MatButtonModule, MatIconModule, MatMenuModule],
   template: `
     <article
       class="asset-card"
       [class.asset-card--archived]="asset().archived"
       [attr.aria-busy]="pending()"
     >
-      <div
-        class="asset-card__visual"
-        [class.asset-card__visual--image]="category() === 'image'"
-      >
-        @if (previewUrl()) {
-        <img
-          class="asset-card__preview"
-          [src]="previewUrl()"
-          [alt]="asset().name"
-        />
-        } @else {
-        <mat-icon class="asset-card__type-icon">{{
-          icon()
-        }}</mat-icon>
-        <span class="asset-card__media-type">
-          {{ asset().mediaType || 'METADATA RECORD' }}
-        </span>
-        }
+      <ngx-asset-card-visual [asset]="asset()">
         <button
           class="asset-card__menu-trigger"
           mat-icon-button
@@ -49,7 +33,7 @@ import { mediaCategory } from './asset-manager.utils';
         >
           <mat-icon>more_horiz</mat-icon>
         </button>
-      </div>
+      </ngx-asset-card-visual>
       <div class="asset-card__body">
         <div class="asset-card__heading">
           <button
@@ -126,45 +110,6 @@ import { mediaCategory } from './asset-manager.utils';
       overflow: hidden;
       border: 1px solid var(--mat-sys-outline-variant, #e4e4eb);
       border-radius: 0.75rem;
-    }
-
-    .asset-card__visual {
-      position: relative;
-      display: flex;
-      min-height: 8.75rem;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 0.625rem;
-      background: var(--mat-sys-surface-container, #f1eff6);
-    }
-
-    .asset-card__visual--image {
-      background: var(--mat-sys-primary-container, #eaddff);
-    }
-
-    .asset-card__type-icon {
-      width: 2.625rem;
-      height: 2.625rem;
-      color: var(--mat-sys-primary, #6750a4);
-      font-size: 2.625rem;
-      opacity: 0.8;
-    }
-
-    .asset-card__preview {
-      width: 100%;
-      min-height: 8.75rem;
-      max-height: 8rem;
-      object-fit: cover;
-    }
-
-    .asset-card__media-type {
-      max-width: 80%;
-      overflow-wrap: anywhere;
-      font-size: 0.625rem;
-      letter-spacing: 0.0625rem;
-      text-align: center;
-      opacity: 0.55;
     }
 
     .asset-card__menu-trigger {
@@ -285,13 +230,6 @@ export class AssetCardComponent {
   readonly archive = output<void>();
   readonly remove = output<void>();
   readonly bytes = formatBytes;
-  readonly category = computed(() => mediaCategory(this.asset()));
-  readonly previewUrl = computed(() => {
-    const asset = this.asset();
-    return mediaCategory(asset) === 'image' && asset.storageUrl
-      ? asset.storageUrl
-      : null;
-  });
   readonly storageLabel = computed(
     () =>
       ({
@@ -300,15 +238,5 @@ export class AssetCardComponent {
         STORAGE_FAILED: 'Storage failed',
         AWAITING_UPLOAD: 'Storage unavailable',
       }[this.asset().storageStatus])
-  );
-  readonly icon = computed(
-    () =>
-      ({
-        image: 'image',
-        video: 'movie',
-        audio: 'music_note',
-        document: 'description',
-        record: 'inventory_2',
-      }[this.category()])
   );
 }

@@ -23,6 +23,27 @@ states and responsive layouts. Separate mocked coverage from live integration;
 use disposable data in an approved environment for mutation checks.
 
 ## Current verification and limitations
+
+2026-10-07: MVVM refactor production build and 36 ChromeHeadless tests pass
+(Node 24.9.0 on this execution host; CI remains Node 22). Six new store tests cover
+shared root-injector lifetime, in-flight refresh survival after page destruction,
+lazy details/save/upload/folder streams, details cancellation and overlapping-request
+suppression, domain upload progress, failed-write cache retention and server-success
+commits. Existing mocked contract, filtering, validation and dialog recovery tests pass.
+Two manager tests were updated because dialog close values no longer write cached
+state; successful store requests now own those commits.
+
+The authenticated admin shell consumed the rebuilt localhost bundle: 15 extracted
+card visual elements rendered, searching Angular returned one asset, details loaded
+from the service, and the upload dialog rendered the extracted file input. At a
+390px viewport the upload dialog measured 370.5px and the library had no horizontal
+overflow (page width 390px). Restored the original viewport, cleared search and closed
+the dialog. No live writes were performed; mutations remain verified through HTTP
+mocks. Known shared Material component ID warnings remain an external integration
+limitation. No lint command or E2E runner was introduced.
+
+Refactor design and evidence: [MVVM refactor](../specs/003-mvvm-refactor/handoff.md).
+
 2026-10-04: folder management and duplicate-upload feedback production build and
 30 ChromeHeadless tests pass. Mocked API/dialog/store tests cover folder CRUD,
 case-insensitive-name and nonempty-folder conflicts, root/destination mapping,

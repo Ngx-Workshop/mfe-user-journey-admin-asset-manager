@@ -1,16 +1,14 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
   input,
   output,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { Asset } from '../services/asset-api.service';
+import { Asset } from '../services/asset.models';
 import { AssetLibraryFiltersComponent } from './asset-library-filters.component';
 import {
-  AssetLibraryStore,
   AssetLibraryViewModel,
 } from './asset-library.models';
 import { AssetLibraryResultsComponent } from './asset-library-results.component';
@@ -93,27 +91,7 @@ import {
   `,
 })
 export class AssetLibraryComponent {
-  readonly store = input.required<AssetLibraryStore>();
-  readonly viewModel = computed<AssetLibraryViewModel>(() => {
-    const store = this.store();
-    return {
-      filters: {
-        query: store.query(),
-        archiveFilter: store.archiveFilter(),
-        typeFilter: store.typeFilter(),
-        storageFilter: store.storageFilter(),
-      },
-      results: {
-        folders: store.folders(),
-        assets: store.filtered(),
-        totalAssets: store.assets().length,
-        loading: store.loading(),
-        error: store.error(),
-        notice: store.notice(),
-        pendingIds: store.pending(),
-      },
-    };
-  });
+  readonly viewModel = input.required<AssetLibraryViewModel>();
 
   readonly refresh = output<void>();
   readonly resetFilters = output<void>();

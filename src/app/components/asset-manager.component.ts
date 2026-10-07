@@ -1,33 +1,19 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   inject,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import {
-  Asset,
-  Folder,
-  folderLabel,
-} from '../services/asset-api.service';
-import {
-  AssetDetailsComponent,
-  DeleteAssetComponent,
-} from './asset-details.component';
-import { AssetEditorComponent } from './asset-editor.component';
+import { Asset, Folder } from '../services/asset.models';
 import { AssetFolderBrowserComponent } from './asset-folder-browser.component';
-import { AssetFolderEditorComponent } from './asset-folder-editor.component';
+import { AssetManagerDialogs } from './asset-manager-dialogs';
 import { AssetLibraryComponent } from './asset-library.component';
 import { MfeAssetManagerHeader } from './asset-manager-header.component';
 import { AssetManagerSummaryComponent } from './asset-manager-summary.component';
 import {
   ArchiveFilter,
   AssetTypeFilter,
-  FolderEditorData,
-  FolderResult,
   StorageFilter,
 } from './asset-manager.models';
 import { AssetManagerStore } from './asset-manager.store';
@@ -43,7 +29,7 @@ import { AssetManagerStore } from './asset-manager.store';
     MfeAssetManagerHeader,
     AssetFolderBrowserComponent,
   ],
-  providers: [AssetManagerStore],
+  providers: [AssetManagerDialogs],
   template: `
     <ngx-mfe-asset-manager-header />
     <nav class="asset-manager__actions" aria-label="Asset actions">
@@ -82,7 +68,7 @@ import { AssetManagerStore } from './asset-manager.store';
         archived assets.
       </p>
       <ngx-asset-library
-        [store]="store"
+        [viewModel]="store.libraryViewModel()"
         (refresh)="refresh()"
         (resetFilters)="clearFilters()"
         (upload)="edit(undefined, true)"
@@ -158,8 +144,7 @@ import { AssetManagerStore } from './asset-manager.store';
 })
 export class AssetManagerComponent {
   readonly store = inject(AssetManagerStore);
-  private readonly dialog = inject(MatDialog);
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly dialogs = inject(AssetManagerDialogs);
 
   readonly assets = this.store.assets;
   readonly loading = this.store.loading;
@@ -199,85 +184,10 @@ export class AssetManagerComponent {
     this.store.setStorageFilter(filter);
   }
 
-  edit(asset?: Asset, upload = false): void {
-    this.dialog
-      .open(AssetEditorComponent, {
-        data: {
-          asset,
-          upload,
-          folders: this.store.folders(),
-          folderId:
-            this.store.folderFilter() === 'all'
-              ? null
-              : this.store.folderFilter(),
-        },
-        width: '560px',
-        maxWidth: '95vw',
-      })
-      .afterClosed()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((saved: Asset | undefined) => {
-        if (!saved) return;
-        this.store.save(saved, upload);
-      });
-  }
-
-  details(asset: Asset): void {
-    this.store
-      .loadDetails(asset)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((fresh) => {
-        this.dialog.open(AssetDetailsComponent, {
-          data: {
-            asset: fresh,
-            folderName: folderLabel(
-              fresh.folderId,
-              this.store.folders()
-            ),
-          },
-          width: '640px',
-          maxWidth: '95vw',
-        });
-      });
-  }
-
-  archive(asset: Asset): void {
-    this.store.archive(asset);
-  }
-
-  editFolder(folder?: Folder): void {
-    this.openFolderEditor({ folder });
-  }
-
-  deleteFolder(folder: Folder): void {
-    this.openFolderEditor({ folder, remove: true });
-  }
-
-  private openFolderEditor(data: FolderEditorData): void {
-    this.dialog
-      .open(AssetFolderEditorComponent, {
-        data,
-        width: '440px',
-        maxWidth: '95vw',
-      })
-      .afterClosed()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((result: FolderResult | undefined) => {
-        if (result) this.store.saveFolder(result);
-      });
-  }
-
-  delete(asset: Asset): void {
-    this.dialog
-      .open(DeleteAssetComponent, {
-        data: asset,
-        width: '440px',
-        maxWidth: '95vw',
-      })
-      .afterClosed()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((confirmed: boolean) => {
-        if (confirmed) this.store.remove(asset);
-      });
-  }
+  edit(asset?: Asset, upload = false): void { this.dialogs.edit(asset, upload); }
+  details(asset: Asset): void { this.dialogs.details(asset); }
+  archive(asset: Asset): void { this.store.archive(asset); }
+  editFolder(folder?: Folder): void { this.dialogs.editFolder(folder); }
+  deleteFolder(folder: Folder): void { this.dialogs.deleteFolder(folder); }
+  delete(asset: Asset): void { this.dialogs.delete(asset); }
 }

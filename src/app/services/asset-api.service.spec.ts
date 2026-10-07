@@ -8,13 +8,8 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import {
-  AssetApiService,
-  assetError,
-  fileError,
-  folderLabel,
-  MAX_FILE_BYTES,
-} from './asset-api.service';
+import { AssetApiService } from './asset-api.service';
+import { assetError, fileError, folderLabel, MAX_FILE_BYTES } from './asset-utils';
 
 describe('AssetApiService', () => {
   let api: AssetApiService;

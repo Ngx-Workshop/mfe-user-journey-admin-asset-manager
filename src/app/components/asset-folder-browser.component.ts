@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
-import { Folder } from '../services/asset-api.service';
+import { Folder } from '../services/asset.models';
 import { FolderFilter } from './asset-manager.models';
 
 @Component({

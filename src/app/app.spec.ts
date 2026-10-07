@@ -11,7 +11,7 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
 import { App } from './app';
 import { AssetManagerComponent } from './components/asset-manager.component';
-import { Asset, Folder } from './services/asset-api.service';
+import { Asset, Folder } from './services/asset.models';
 import { AssetEditorComponent } from './components/asset-editor.component';
 import { AssetFolderEditorComponent } from './components/asset-folder-editor.component';
 
@@ -193,13 +193,15 @@ describe('Asset manager', () => {
     manager.store.refreshFolders();
     http.expectOne('/api/uploader/folders').flush([branding]);
     expect(manager.store.foldersError()).toBe('');
-    manager.store.saveFolder({ saved: { ...branding, name: 'Brand', version: 1 } });
+    manager.store.writeFolder({ folder: branding }, 'Brand').subscribe();
+    http.expectOne('/api/uploader/folders/branding').flush({ ...branding, name: 'Brand', version: 1 });
     expect(manager.store.folders()[0].name).toBe('Brand');
-    manager.store.saveFolder({ removed: branding._id });
+    manager.store.writeFolder({ folder: branding, remove: true }, '').subscribe();
+    http.expectOne('/api/uploader/folders/branding').flush(null, { status: 204, statusText: 'No Content' });
     expect(manager.store.folders()).toEqual([]);
     expect(manager.store.folderFilter()).toBe('all');
   });
-  it('passes the selected destination to intake and replaces assets only after dialog success', () => {
+  it('passes the selected destination to intake without applying arbitrary dialog results', () => {
     const { manager } = setup();
     http.expectOne('/api/uploader').flush([logo]);
     manager.store.setFolderFilter(branding._id);
@@ -214,10 +216,13 @@ describe('Asset manager', () => {
     expect(manager.assets()).toEqual([logo]);
     dialog.and.returnValue({ afterClosed: () => of(moved) } as ReturnType<MatDialog['open']>);
     manager.edit(logo);
+    expect(manager.assets()).toEqual([logo]);
+    manager.store.saveAsset({ name: moved.name, folderId: moved.folderId }, moved._id).subscribe();
+    http.expectOne('/api/uploader/logo').flush(moved);
     expect(manager.filtered()).toEqual([moved]);
     expect(manager.assets()[0].storageUrl).toBe(logo.storageUrl);
   });
-  it('opens folder deletion confirmation and changes local folders only after success', () => {
+  it('opens folder deletion confirmation without applying arbitrary dialog results', () => {
     const { manager } = setup();
     http.expectOne('/api/uploader').flush([]);
     manager.store.setFolderFilter(branding._id);
@@ -233,6 +238,9 @@ describe('Asset manager', () => {
       afterClosed: () => of({ removed: branding._id }),
     } as ReturnType<MatDialog['open']>);
     manager.deleteFolder(branding);
+    expect(manager.store.folders()).toEqual([branding]);
+    manager.store.writeFolder({ folder: branding, remove: true }, '').subscribe();
+    http.expectOne('/api/uploader/folders/branding').flush(null, { status: 204, statusText: 'No Content' });
     expect(manager.store.folders()).toEqual([]);
     expect(manager.store.folderFilter()).toBe('all');
   });

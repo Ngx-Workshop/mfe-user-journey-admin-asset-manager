@@ -7,7 +7,8 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { Asset, folderLabel } from '../services/asset-api.service';
+import { Asset } from '../services/asset.models';
+import { folderLabel } from '../services/asset-utils';
 import { AssetCardComponent } from './asset-card.component';
 import { AssetLibraryResultsViewModel } from './asset-library.models';
 

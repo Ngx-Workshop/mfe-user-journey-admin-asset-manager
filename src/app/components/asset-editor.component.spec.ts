@@ -14,7 +14,7 @@ import {
 } from '@angular/material/dialog';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { AssetEditorComponent } from './asset-editor.component';
-import { Asset, Folder } from '../services/asset-api.service';
+import { Asset, Folder } from '../services/asset.models';
 
 describe('Asset editor recovery and progress', () => {
   let http: HttpTestingController;

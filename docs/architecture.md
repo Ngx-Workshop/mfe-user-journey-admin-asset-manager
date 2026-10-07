@@ -1,5 +1,5 @@
 # Asset Manager architecture
-Source reviewed: 2026-10-04.
+Source reviewed: 2026-10-07.
 
 ## Responsibility and source map
 This Angular standalone remote owns the administrator asset library. It consumes
@@ -11,28 +11,54 @@ or binary persistence.
 | Bootstrap / standalone providers | `src/main.ts`, `src/bootstrap.ts`, `src/app/app.config.ts` |
 | Federation root | `src/app/app.ts`: named and default `App` |
 | Routes | `src/app/app.routes.ts`: named `Routes`, empty path and legacy `hello-world` |
-| Library/dialog orchestration | `src/app/components/asset-manager.component.ts` |
-| Component-scoped signal state/API workflows | `src/app/components/asset-manager.store.ts` |
+| Page/dialog orchestration | `src/app/components/asset-manager.component.ts`, `asset-manager-dialogs.ts` |
+| Root singleton state/view models/API workflows | `src/app/components/asset-manager.store.ts` |
 | Summary/library composition | `src/app/components/asset-manager-summary.component.ts`, `asset-library.component.ts` |
 | Filters/results/card presentation | `src/app/components/asset-library-filters.component.ts`, `asset-library-results.component.ts`, `asset-card.component.ts` |
 | Library view-model contracts | `src/app/components/asset-library.models.ts` |
 | Folder browsing and create/rename/delete dialogs | `src/app/components/asset-folder-browser.component.ts`, `asset-folder-editor.component.ts` |
 | Filter types/media mapping | `src/app/components/asset-manager.models.ts`, `asset-manager.utils.ts` |
-| Metadata/file intake | `src/app/components/asset-editor.component.ts` |
+| Metadata/file intake | `src/app/components/asset-editor.component.ts`, `asset-file-input.component.ts` |
 | Details/delete confirmation | `src/app/components/asset-details.component.ts` |
 | Typed forms/mapping | `src/app/services/asset-form.ts` |
-| API/errors/file validation | `src/app/services/asset-api.service.ts` |
+| Stateless HTTP transport | `src/app/services/asset-api.service.ts` |
+| Published DTO aliases / pure validation, errors, formatting | `src/app/services/asset.models.ts`, `asset-utils.ts` |
 
-Components use inline templates and styles, OnPush change detection, and BEM class
-names. The manager coordinates dialogs and user intentions. Its component-scoped
-store encapsulates writable signals, computed filters, API workflows, errors and
-pending state while exposing read-only signals. Presentational components receive
-the store's read-only signal contract and derive a computed template view model.
-The library passes cohesive filter and result view-model slices to focused child
-components. They emit typed user intentions without owning or mutating server
-state. RxJS subscriptions are bound to the manager lifetime and write into signals.
-Material dialogs retain input on failure and block closing during writes. Local
-assets change after server success.
+## MVVM and data flow
+
+Components use inline HTML/SCSS, OnPush change detection and BEM classes.
+The data flow is orchestration → singleton state → stateless HTTP transport.
+Published DTO aliases are in `asset.models.ts`; pure helpers live in `asset-utils.ts`.
+`AssetApiService` injects only HttpClient and owns no signals or cached data.
+Only `AssetManagerStore` consumes that service in production source.
+
+The root-provided store owns the shared asset/folder cache, read-only signal selectors,
+filters, notices and pending state. Its computed `libraryViewModel` provides ordinary
+value slices to library presentation, filters and results; presentation does not receive
+a store or signal-shaped facade. Summary and folder browser also receive values and
+emit typed intentions. Card previews live in `asset-card-visual.component.ts`, with
+projected card actions retaining parent ownership of the Material menu.
+
+RxJS models asynchronous operations. Save, folder-write, upload and details streams
+are cold; subscribing starts their requests. Only successful server responses commit
+cache changes. Upload maps HTTP events into domain progress/completion events before
+exposing them to the editor. Details acquires its pending flag within `defer` and
+clears it on success, error or cancellation. Refresh/archive/delete subscriptions are
+owned by the root store; page destruction does not terminate shared operations.
+
+`AssetManagerComponent` coordinates the page and delegates dialog work to its
+component-scoped `AssetManagerDialogs`. Details and confirmation subscriptions end
+with the page lifetime. Editors are orchestration components: they own typed forms,
+file selection and local busy/error/progress signals, call store operations and bind
+subscriptions to their dialog lifetime. File intake is a presentation child. Editors
+retain input on failure and block closing during writes. Dialog close values no longer
+commit data: state is already updated by the store before the successful dialog closes.
+
+Cache and filters persist through page navigation for the root injector lifetime;
+mounting the manager refreshes both collections. No persistence is added across
+reloads. This remote's singleton belongs to the host root injector when federated.
+Component sizes are 39–242 lines; the 242-line card is a deliberate small exception
+to the approximate 230-line guideline to keep its cohesive actions/body together.
 
 ## Published contracts
 Installed `@tmdjr/service-uploader-contracts` 0.0.11 `components.schemas` supplies

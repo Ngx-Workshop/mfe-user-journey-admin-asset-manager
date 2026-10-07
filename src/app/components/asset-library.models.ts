@@ -1,24 +1,9 @@
-import { Signal } from '@angular/core';
-import { Asset, Folder } from '../services/asset-api.service';
+import { Asset, Folder } from '../services/asset.models';
 import {
   ArchiveFilter,
   AssetTypeFilter,
   StorageFilter,
 } from './asset-manager.models';
-
-export interface AssetLibraryStore {
-  readonly assets: Signal<readonly Asset[]>;
-  readonly folders: Signal<readonly Folder[]>;
-  readonly filtered: Signal<readonly Asset[]>;
-  readonly loading: Signal<boolean>;
-  readonly error: Signal<string>;
-  readonly notice: Signal<string>;
-  readonly pending: Signal<ReadonlySet<string>>;
-  readonly query: Signal<string>;
-  readonly archiveFilter: Signal<ArchiveFilter>;
-  readonly typeFilter: Signal<AssetTypeFilter>;
-  readonly storageFilter: Signal<StorageFilter>;
-}
 
 export interface AssetLibraryFiltersViewModel {
   readonly query: string;

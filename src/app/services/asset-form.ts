@@ -5,7 +5,7 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import type { Asset, CreateAsset } from './asset-api.service';
+import { Asset, CreateAsset } from './asset.models';
 export function parseTags(value: string): string[] {
   return [
     ...new Set(

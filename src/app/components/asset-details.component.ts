@@ -9,7 +9,8 @@ import {
   MAT_DIALOG_DATA,
   MatDialogModule,
 } from '@angular/material/dialog';
-import { Asset, formatBytes } from '../services/asset-api.service';
+import { Asset } from '../services/asset.models';
+import { formatBytes } from '../services/asset-utils';
 @Component({
   selector: 'ngx-asset-details',
   changeDetection: ChangeDetectionStrategy.OnPush,

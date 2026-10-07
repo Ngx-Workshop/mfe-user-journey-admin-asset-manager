@@ -1,6 +1,6 @@
 # Constitution — Angular remote seed
 
-Version: 1.0.0 · Adopted: 2026-09-29
+Version: 1.1.0 · Adopted: 2026-09-29 · Amended: 2026-10-07
 
 These are design requirements for future work, not a claim that every inherited
 seed implementation already satisfies them. Current gaps live in the development guide.
@@ -27,6 +27,13 @@ Prefer focused components and services; use `OnPush` where appropriate. Avoid
 introducing another state framework or weakening types without a demonstrated need.
 Keep Angular and federation shared versions aligned with the consuming shell.
 
+Follow MVVM: stateless HTTP services sit behind a root singleton state layer.
+Orchestration components use that layer; presentational components receive value
+view models and emit user intentions. Keep async operations as lifecycle-managed
+RxJS streams and expose read-only signal selectors for template state. Keep component
+HTML and SCSS inline, use BEM classes, and aim for about 230 lines per component;
+retain a small documented exception when further splitting would reduce cohesion.
+
 ## 4. Put data ownership on the server
 
 Use published DTO contracts and explicit request mapping. Frontend visibility and
@@ -48,6 +55,10 @@ contracts, and verification steps. Record external dependencies and handoffs in 
 feature folder. Distinguish assumptions, source observations, and verified results.
 
 ## Amendments
+
+2026-10-07 — Version 1.1.0 records the requested MVVM boundaries, root singleton
+state, inline views, BEM styling and approximate component-size standard. See
+`specs/003-mvvm-refactor` for implementation and verification.
 
 Change these principles intentionally with a rationale and version/date update.
 Review affected architecture docs and templates at the same time. A justified

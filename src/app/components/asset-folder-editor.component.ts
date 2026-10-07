@@ -6,7 +6,8 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { finalize } from 'rxjs';
-import { AssetApiService, assetError } from '../services/asset-api.service';
+import { AssetManagerStore } from './asset-manager.store';
+import { assetError } from '../services/asset-utils';
 import { nonblank } from '../services/asset-form';
 import { FolderEditorData, FolderResult } from './asset-manager.models';
 
@@ -50,7 +51,7 @@ import { FolderEditorData, FolderResult } from './asset-manager.models';
 export class AssetFolderEditorComponent {
   readonly data = inject<FolderEditorData>(MAT_DIALOG_DATA);
   readonly ref = inject(MatDialogRef<AssetFolderEditorComponent, FolderResult>);
-  private readonly api = inject(AssetApiService);
+  private readonly store = inject(AssetManagerStore);
   private readonly destroyRef = inject(DestroyRef);
   readonly name = new FormControl(this.data.folder?.name ?? '', { nonNullable: true, validators: [nonblank] });
   readonly error = signal('');
@@ -74,21 +75,11 @@ export class AssetFolderEditorComponent {
       this.name.enable();
       this.ref.disableClose = false;
     };
-    if (this.data.remove) {
-      const id = this.data.folder._id;
-      this.api.removeFolder(id).pipe(takeUntilDestroyed(this.destroyRef), finalize(done)).subscribe({
-        next: () => this.ref.close({ removed: id }),
-        error: (error: unknown) => this.error.set(assetError(error, 'folder-delete')),
+    this.store.writeFolder(this.data, this.name.getRawValue().trim())
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(done))
+      .subscribe({
+        next: (result) => this.ref.close(result),
+        error: (error: unknown) => this.error.set(assetError(error, this.data.remove ? 'folder-delete' : 'folder-save')),
       });
-    } else {
-      const dto = { name: this.name.getRawValue().trim() };
-      const request = this.data.folder
-        ? this.api.updateFolder(this.data.folder._id, dto)
-        : this.api.createFolder(dto);
-      request.pipe(takeUntilDestroyed(this.destroyRef), finalize(done)).subscribe({
-        next: (saved) => this.ref.close({ saved }),
-        error: (error: unknown) => this.error.set(assetError(error, 'folder-save')),
-      });
-    }
   }
 }

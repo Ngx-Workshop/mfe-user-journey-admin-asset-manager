@@ -1,4 +1,3 @@
-import { HttpEventType } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -19,20 +18,17 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { finalize } from 'rxjs';
-import {
-  Asset,
-  AssetApiService,
-  Folder,
-  assetError,
-  fileError,
-  formatBytes,
-} from '../services/asset-api.service';
+import { AssetFileInputComponent } from './asset-file-input.component';
+import { AssetManagerStore } from './asset-manager.store';
+import { Asset, Folder } from '../services/asset.models';
+import { assetError, fileError } from '../services/asset-utils';
 import { assetForm, metadata } from '../services/asset-form';
 
 @Component({
   selector: 'ngx-asset-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AssetFileInputComponent,
     ReactiveFormsModule,
     MatDialogModule,
     MatButtonModule,
@@ -53,26 +49,8 @@ import { assetForm, metadata } from '../services/asset-form';
     </h2>
     <mat-dialog-content class="asset-editor">
       @if (data.upload) {
-      <p class="asset-editor__guidance">
-        Upload a file up to 25 MiB. Stored images are available for
-        preview in the library. Identical content is rejected across all
-        folders, including archived assets.
-      </p>
-      <label class="asset-editor__file-label" for="asset-file">
-        Choose file
-      </label>
-      <input
-        class="asset-editor__file-input"
-        id="asset-file"
-        type="file"
-        (change)="choose($event)"
-        [disabled]="busy()"
-      />
-      @if (file()) {
-      <p class="asset-editor__file-summary">
-        {{ file()!.name }} · {{ bytes(file()!.size) }}
-      </p>
-      } }
+        <ngx-asset-file-input [file]="file()" [disabled]="busy()" (choose)="choose($event)" />
+      }
       <form
         class="asset-editor__form"
         [formGroup]="form"
@@ -177,16 +155,6 @@ import { assetForm, metadata } from '../services/asset-form';
         margin-top: 16px;
       }
 
-      .asset-editor__file-input {
-        max-width: 100%;
-        margin: 12px 0;
-      }
-
-      .asset-editor__file-label {
-        display: block;
-        font-weight: 500;
-      }
-
       .asset-editor__error {
         color: var(--mat-sys-error, #b3261e);
       }
@@ -198,7 +166,7 @@ export class AssetEditorComponent {
     MAT_DIALOG_DATA
   );
   readonly ref = inject(MatDialogRef<AssetEditorComponent, Asset>);
-  private readonly api = inject(AssetApiService);
+  private readonly store = inject(AssetManagerStore);
   private readonly destroyRef = inject(DestroyRef);
   readonly form = assetForm(this.data.asset, this.data.upload, this.data.folderId);
   readonly missingFolderId = this.data.asset?.folderId &&
@@ -208,7 +176,6 @@ export class AssetEditorComponent {
   readonly file = signal<File | null>(null);
   readonly error = signal('');
   readonly progress = signal<number | null>(null);
-  readonly bytes = formatBytes;
   choose(event: Event): void {
     const file =
       (event.target as HTMLInputElement).files?.[0] ?? null;
@@ -233,26 +200,18 @@ export class AssetEditorComponent {
     };
     if (this.data.upload) {
       const values = this.form.getRawValue();
-      this.api
+      this.store
         .upload(this.file()!, values.name, values.description, values.folderId)
         .pipe(takeUntilDestroyed(this.destroyRef), finalize(done))
         .subscribe({
           next: (event) => {
-            if (event.type === HttpEventType.UploadProgress)
-              this.progress.set(
-                event.total
-                  ? Math.round((event.loaded * 100) / event.total)
-                  : null
-              );
-            if (event.type === HttpEventType.Response && event.body)
-              this.ref.close(event.body);
+            if (event.kind === 'progress') this.progress.set(event.percent);
+            if (event.kind === 'complete') this.ref.close(event.asset);
           },
           error: (error) => this.error.set(assetError(error, 'upload')),
         });
     } else {
-      const request = this.data.asset
-        ? this.api.update(this.data.asset._id, metadata(this.form))
-        : this.api.create(metadata(this.form));
+      const request = this.store.saveAsset(metadata(this.form), this.data.asset?._id);
       request
         .pipe(takeUntilDestroyed(this.destroyRef), finalize(done))
         .subscribe({

@@ -1,4 +1,4 @@
-import { Asset } from '../services/asset-api.service';
+import { Asset } from '../services/asset.models';
 import { AssetTypeFilter } from './asset-manager.models';
 
 export function mediaCategory(asset: Asset): Exclude<

@@ -6,23 +6,25 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { EMPTY, Observable, catchError, finalize } from 'rxjs';
-import {
-  Asset,
-  AssetApiService,
-  Folder,
-  assetError,
-} from '../services/asset-api.service';
+import { EMPTY, Observable, catchError, defer, filter, finalize, map, tap } from 'rxjs';
+import { HttpEventType } from '@angular/common/http';
+import type { CreateAsset } from '../services/asset.models';
+import type { AssetLibraryViewModel } from './asset-library.models';
+import { AssetApiService } from '../services/asset-api.service';
+import { Asset, Folder } from '../services/asset.models';
+import { assetError } from '../services/asset-utils';
 import {
   ArchiveFilter,
+  AssetUploadEvent,
   AssetTypeFilter,
   FolderFilter,
+  FolderEditorData,
   FolderResult,
   StorageFilter,
 } from './asset-manager.models';
 import { mediaCategory } from './asset-manager.utils';
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class AssetManagerStore {
   private readonly api = inject(AssetApiService);
   private readonly destroyRef = inject(DestroyRef);
@@ -83,6 +85,53 @@ export class AssetManagerStore {
     );
   });
 
+  readonly libraryViewModel = computed<AssetLibraryViewModel>(() => ({
+    filters: {
+      query: this.query(), archiveFilter: this.archiveFilter(),
+      typeFilter: this.typeFilter(), storageFilter: this.storageFilter(),
+    },
+    results: {
+      folders: this.folders(), assets: this.filtered(), totalAssets: this.assets().length,
+      loading: this.loading(), error: this.error(), notice: this.notice(), pendingIds: this.pending(),
+    },
+  }));
+
+  // Cold operations: callers own their subscription lifetime; cache commits follow server success.
+  saveAsset(dto: CreateAsset, id?: string): Observable<Asset> {
+    return defer(() => id ? this.api.update(id, dto) : this.api.create(dto)).pipe(
+      tap((asset) => this.save(asset, false))
+    );
+  }
+
+  upload(file: File, name: string, description: string, folderId: string | null): Observable<AssetUploadEvent> {
+    return defer(() => this.api.upload(file, name, description, folderId)).pipe(
+      map((event): AssetUploadEvent | null => {
+        if (event.type === HttpEventType.UploadProgress) {
+          return { kind: 'progress', percent: event.total
+            ? Math.round((event.loaded * 100) / event.total) : null };
+        }
+        return event.type === HttpEventType.Response && event.body
+          ? { kind: 'complete', asset: event.body } : null;
+      }),
+      filter((event): event is AssetUploadEvent => event !== null),
+      tap((event) => {
+        if (event.kind === 'complete') this.save(event.asset, true);
+      })
+    );
+  }
+
+  writeFolder(data: FolderEditorData, name: string): Observable<FolderResult> {
+    return defer(() => {
+      if (data.remove && data.folder) {
+        const id = data.folder._id;
+        return this.api.removeFolder(id).pipe(map(() => ({ removed: id })));
+      }
+      const request = data.folder
+        ? this.api.updateFolder(data.folder._id, { name }) : this.api.createFolder({ name });
+      return request.pipe(map((saved) => ({ saved })));
+    }).pipe(tap((result) => this.saveFolder(result)));
+  }
+
   refresh(): void {
     if (this.loading()) return;
     this.loadingState.set(true);
@@ -121,7 +170,7 @@ export class AssetManagerStore {
     this.folderFilterState.set(folder);
   }
 
-  saveFolder(result: FolderResult): void {
+  private saveFolder(result: FolderResult): void {
     if ('saved' in result) {
       this.foldersState.update((folders) => [
         ...folders.filter((folder) => folder._id !== result.saved._id),
@@ -159,7 +208,7 @@ export class AssetManagerStore {
     this.storageFilterState.set('all');
   }
 
-  save(asset: Asset, uploaded: boolean): void {
+  private save(asset: Asset, uploaded: boolean): void {
     this.assetsState.update((assets) => [
       asset,
       ...assets.filter((item) => item._id !== asset._id),
@@ -172,16 +221,18 @@ export class AssetManagerStore {
   }
 
   loadDetails(asset: Asset): Observable<Asset> {
-    if (this.pending().has(asset._id)) return EMPTY;
-    this.setPending(asset._id, true);
-    this.errorState.set('');
-    return this.api.get(asset._id).pipe(
-      finalize(() => this.setPending(asset._id, false)),
-      catchError((error: unknown) => {
-        this.setError(error);
-        return EMPTY;
-      })
-    );
+    return defer(() => {
+      if (this.pending().has(asset._id)) return EMPTY;
+      this.setPending(asset._id, true);
+      this.errorState.set('');
+      return this.api.get(asset._id).pipe(
+        finalize(() => this.setPending(asset._id, false)),
+        catchError((error: unknown) => {
+          this.setError(error);
+          return EMPTY;
+        })
+      );
+    });
   }
 
   archive(asset: Asset): void {
