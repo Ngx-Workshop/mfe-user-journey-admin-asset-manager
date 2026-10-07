@@ -11,18 +11,25 @@ or binary persistence.
 | Bootstrap / standalone providers | `src/main.ts`, `src/bootstrap.ts`, `src/app/app.config.ts` |
 | Federation root | `src/app/app.ts`: named and default `App` |
 | Routes | `src/app/app.routes.ts`: named `Routes`, empty path and legacy `hello-world` |
-| Page/dialog orchestration | `src/app/components/asset-manager.component.ts`, `asset-manager-dialogs.ts` |
-| Root singleton state/view models/API workflows | `src/app/components/asset-manager.store.ts` |
-| Summary/library composition | `src/app/components/asset-manager-summary.component.ts`, `asset-library.component.ts` |
-| Filters/results/card presentation | `src/app/components/asset-library-filters.component.ts`, `asset-library-results.component.ts`, `asset-card.component.ts` |
-| Library view-model contracts | `src/app/components/asset-library.models.ts` |
-| Folder browsing and create/rename/delete dialogs | `src/app/components/asset-folder-browser.component.ts`, `asset-folder-editor.component.ts` |
-| Filter types/media mapping | `src/app/components/asset-manager.models.ts`, `asset-manager.utils.ts` |
-| Metadata/file intake | `src/app/components/asset-editor.component.ts`, `asset-file-input.component.ts` |
-| Details/delete confirmation | `src/app/components/asset-details.component.ts` |
-| Typed forms/mapping | `src/app/services/asset-form.ts` |
-| Stateless HTTP transport | `src/app/services/asset-api.service.ts` |
-| Published DTO aliases / pure validation, errors, formatting | `src/app/services/asset.models.ts`, `asset-utils.ts` |
+| Page/dialog orchestration | `src/app/features/asset-manager/pages/library/asset-manager.component.ts`, `asset-manager-dialogs.ts` |
+| Mirrored feature tests / app composition | `testing/app/features/asset-manager/`, `testing/app/app.spec.ts` |
+| Root singleton state/view models/API workflows | `src/app/features/asset-manager/state/asset-manager.store.ts` |
+| Summary/library composition | `src/app/features/asset-manager/pages/library/asset-manager-summary.component.ts`, `asset-library.component.ts` |
+| Filters/results/card presentation | `src/app/features/asset-manager/pages/library/asset-library-filters.component.ts`, `asset-library-results.component.ts`, `asset-card.component.ts` |
+| Library page view-model contracts | `src/app/features/asset-manager/pages/library/asset-library.models.ts` |
+| Folder browsing and create/rename/delete dialogs | `src/app/features/asset-manager/pages/library/asset-folder-browser.component.ts`, `asset-folder-editor.component.ts` |
+| Shared command/filter types | `src/app/features/asset-manager/models/asset-manager.models.ts` |
+| Pure media mapping | `src/app/features/asset-manager/utils/asset-manager.utils.ts` |
+| Metadata/file intake | `src/app/features/asset-manager/pages/library/asset-editor.component.ts`, `asset-file-input.component.ts` |
+| Details/delete confirmation | `src/app/features/asset-manager/pages/library/asset-details.component.ts` |
+| Typed forms/mapping | `src/app/features/asset-manager/forms/asset-form.ts` |
+| Stateless HTTP transport | `src/app/features/asset-manager/api/asset-api.service.ts` |
+| Published DTO aliases | `src/app/features/asset-manager/models/asset.models.ts` |
+| Pure validation, errors, formatting | `src/app/features/asset-manager/utils/asset-utils.ts` |
+
+The feature root is `src/app/features/asset-manager/`. Page-only views and dialog
+coordination live in `pages/library/`; API, state, models, forms and pure utilities
+have their own responsibility folders. See [source organization](source-organization.md).
 
 ## MVVM and data flow
 

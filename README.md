@@ -13,6 +13,7 @@ Use Node 22 and install with `npm ci`.
 ```sh
 npm run dev:bundle
 npm run build
+npm run check:layout
 npm test -- --watch=false --browsers=ChromeHeadless
 ```
 
@@ -28,6 +29,7 @@ Upload accepts one nonempty file up to 25 MiB, optional name and description.
 Add tags through Edit metadata after receipt. Creating a record produces
 AWAITING_UPLOAD; the current service has no upload-to-existing-record endpoint.
 
-See [architecture](docs/architecture.md), [development](docs/development.md), and
+See [source organization](docs/source-organization.md),
+[architecture](docs/architecture.md), [development](docs/development.md), and
 [feature verification/handoff](specs/001-asset-manager/handoff.md). Deployment
 remains a separate operation; this feature does not publish or alter the registry.

@@ -1,0 +1,263 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ReactiveFormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import {
+  MAT_DIALOG_DATA,
+  MatDialogModule,
+  MatDialogRef,
+} from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSelectModule } from '@angular/material/select';
+import { finalize } from 'rxjs';
+import { AssetFileInputComponent } from './asset-file-input.component';
+import { AssetManagerStore } from '../../state/asset-manager.store';
+import { Asset, Folder } from '../../models/asset.models';
+import { assetError, fileError } from '../../utils/asset-utils';
+import { assetForm, metadata } from '../../forms/asset-form';
+
+@Component({
+  selector: 'ngx-asset-editor',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    AssetFileInputComponent,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressBarModule,
+    MatSelectModule,
+  ],
+  template: `
+    <h2 mat-dialog-title class="asset-editor__title">
+      {{
+        data.asset
+          ? 'Edit asset'
+          : data.upload
+            ? 'Upload a file'
+            : 'Create asset record'
+      }}
+    </h2>
+    <mat-dialog-content class="asset-editor">
+      @if (data.upload) {
+        <ngx-asset-file-input
+          [file]="file()"
+          [disabled]="busy()"
+          (choose)="choose($event)"
+        />
+      }
+      <form
+        class="asset-editor__form"
+        [formGroup]="form"
+        (ngSubmit)="save()"
+        id="asset-editor-form"
+      >
+        <mat-form-field
+          class="asset-editor__field"
+          appearance="outline"
+        >
+          <mat-label>Folder</mat-label>
+          <mat-select
+            formControlName="folderId"
+            [canSelectNullableOptions]="true"
+          >
+            <mat-option [value]="null">Root</mat-option>
+            @for (folder of data.folders ?? []; track folder._id) {
+              <mat-option [value]="folder._id">{{
+                folder.name
+              }}</mat-option>
+            }
+            @if (missingFolderId) {
+              <mat-option [value]="missingFolderId" disabled>
+                Unavailable folder ({{ missingFolderId }})
+              </mat-option>
+            }
+          </mat-select>
+          <mat-hint
+            >Moving an asset does not change its stored URL.</mat-hint
+          >
+        </mat-form-field>
+        <mat-form-field
+          class="asset-editor__field"
+          appearance="outline"
+          ><mat-label>{{
+            data.upload ? 'Display name (optional)' : 'Name'
+          }}</mat-label>
+          <input matInput formControlName="name" maxlength="120" />
+          <mat-error>Enter a name up to 120 characters.</mat-error>
+        </mat-form-field>
+        <mat-form-field
+          class="asset-editor__field"
+          appearance="outline"
+          ><mat-label>Description</mat-label>
+          <textarea
+            matInput
+            formControlName="description"
+            rows="3"
+            maxlength="2000"
+          ></textarea>
+          <mat-error>Use up to 2000 characters.</mat-error>
+        </mat-form-field>
+        @if (!data.upload) {
+          <mat-form-field
+            class="asset-editor__field"
+            appearance="outline"
+            ><mat-label>Tags</mat-label>
+            <input
+              matInput
+              formControlName="tags"
+              placeholder="branding, workshop, course"
+            />
+            <mat-hint
+              >Comma separated · up to 50 tags, 100 characters
+              each</mat-hint
+            >
+            <mat-error
+              >Use up to 50 tags of 100 characters each.</mat-error
+            >
+          </mat-form-field>
+        }
+      </form>
+      @if (error()) {
+        <p class="asset-editor__error" role="alert">{{ error() }}</p>
+      }
+      @if (busy()) {
+        <mat-progress-bar
+          class="asset-editor__progress"
+          [mode]="
+            progress() === null ? 'indeterminate' : 'determinate'
+          "
+          [value]="progress() ?? 0"
+        />
+        <p class="asset-editor__status" role="status">
+          {{
+            data.upload
+              ? progress() === null
+                ? 'Receiving file…'
+                : 'Receiving file: ' + progress() + '%'
+              : 'Saving…'
+          }}
+        </p>
+      }
+    </mat-dialog-content>
+    <mat-dialog-actions align="end"
+      ><button mat-button (click)="ref.close()" [disabled]="busy()">
+        Cancel
+      </button>
+      <button
+        mat-flat-button
+        type="submit"
+        form="asset-editor-form"
+        [disabled]="
+          busy() || form.invalid || (data.upload && !file())
+        "
+      >
+        {{ data.upload ? 'Upload file' : 'Save asset' }}
+      </button>
+    </mat-dialog-actions>
+  `,
+  styles: [
+    `
+      .asset-editor__field {
+        display: block;
+        margin-top: 16px;
+      }
+
+      .asset-editor__error {
+        color: var(--mat-sys-error, #b3261e);
+      }
+    `,
+  ],
+})
+export class AssetEditorComponent {
+  readonly data = inject<{
+    asset?: Asset;
+    upload?: boolean;
+    folders?: readonly Folder[];
+    folderId?: string | null;
+  }>(MAT_DIALOG_DATA);
+  readonly ref = inject(MatDialogRef<AssetEditorComponent, Asset>);
+  private readonly store = inject(AssetManagerStore);
+  private readonly destroyRef = inject(DestroyRef);
+  readonly form = assetForm(
+    this.data.asset,
+    this.data.upload,
+    this.data.folderId
+  );
+  readonly missingFolderId =
+    this.data.asset?.folderId &&
+    !this.data.folders?.some(
+      (folder) => folder._id === this.data.asset?.folderId
+    )
+      ? this.data.asset.folderId
+      : null;
+  readonly busy = signal(false);
+  readonly file = signal<File | null>(null);
+  readonly error = signal('');
+  readonly progress = signal<number | null>(null);
+  choose(event: Event): void {
+    const file =
+      (event.target as HTMLInputElement).files?.[0] ?? null;
+    const error = file ? fileError(file) : null;
+    this.error.set(error ?? '');
+    this.file.set(error ? null : file);
+  }
+  save(): void {
+    if (this.busy()) return;
+    this.form.markAllAsTouched();
+    if (this.form.invalid || (this.data.upload && !this.file()))
+      return;
+    this.error.set('');
+    this.progress.set(null);
+    this.busy.set(true);
+    this.form.disable();
+    this.ref.disableClose = true;
+    const done = () => {
+      this.busy.set(false);
+      this.form.enable();
+      this.ref.disableClose = false;
+    };
+    if (this.data.upload) {
+      const values = this.form.getRawValue();
+      this.store
+        .upload(
+          this.file()!,
+          values.name,
+          values.description,
+          values.folderId
+        )
+        .pipe(takeUntilDestroyed(this.destroyRef), finalize(done))
+        .subscribe({
+          next: (event) => {
+            if (event.kind === 'progress')
+              this.progress.set(event.percent);
+            if (event.kind === 'complete')
+              this.ref.close(event.asset);
+          },
+          error: (error) =>
+            this.error.set(assetError(error, 'upload')),
+        });
+    } else {
+      const request = this.store.saveAsset(
+        metadata(this.form),
+        this.data.asset?._id
+      );
+      request
+        .pipe(takeUntilDestroyed(this.destroyRef), finalize(done))
+        .subscribe({
+          next: (asset) => this.ref.close(asset),
+          error: (error) =>
+            this.error.set(assetError(error, 'asset-save')),
+        });
+    }
+  }
+}

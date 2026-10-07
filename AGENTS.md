@@ -15,6 +15,9 @@ are separate repositories; their source is not required to understand this seed.
 For a newly cloned product repository, also follow [seed adoption](docs/seed-adoption.md).
 All links above resolve within this checkout. Do not assume a sibling repository exists.
 
+Also read [Source organization](docs/source-organization.md) before adding or moving
+application files; run `npm run check:layout` after structural changes.
+
 ## Working rules
 
 - Inspect relevant source and `git status` before editing; preserve unrelated changes.

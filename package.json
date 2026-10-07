@@ -9,7 +9,8 @@
     "test": "ng test",
     "run:all": "node node_modules/@angular-architects/module-federation/src/server/mf-dev-server.js",
     "serve:bundle": "http-server ./dist/mfe-user-journey-admin-asset-manager -p 4201 -a 0.0.0.0 --cors -c-1",
-    "dev:bundle": "node scripts/dev-bundle.mjs"
+    "dev:bundle": "node scripts/dev-bundle.mjs",
+    "check:layout": "node scripts/check-source-layout.mjs"
   },
   "private": true,
   "dependencies": {
