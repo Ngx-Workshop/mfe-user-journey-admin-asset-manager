@@ -12,6 +12,9 @@
     "dev:bundle": "node scripts/dev-bundle.mjs",
     "check:layout": "node scripts/check-source-layout.mjs"
   },
+  "overrides": {
+    "webpack": "5.105.2"
+  },
   "private": true,
   "dependencies": {
     "@angular-architects/module-federation": "20.0.0",
@@ -28,6 +31,7 @@
     "tslib": "2.8.1"
   },
   "devDependencies": {
+    "@angular-devkit/build-angular": "21.2.26",
     "@angular/build": "^21.1.0",
     "@angular/cli": "21.1.0",
     "@angular/compiler-cli": "21.1.0",
