@@ -50,3 +50,9 @@ categories, source-tree specs and test folders without corresponding source fold
 Run the existing unit suite and production build after moving files. Keep this
 convention and the local architecture source map current. Historical feature
 records describe the paths used when that work was delivered.
+
+Selection-specific presentation and state remain local to the library page:
+`asset-library-selection.ts` owns visible selection signals/effect in AssetLibrary;
+Results receives its value snapshot and emits selection/drag intentions;
+`asset-selection-toolbar.component.ts` and `asset-library-empty.component.ts` are
+stateless presentation children. They do not add root domain state or HTTP access.

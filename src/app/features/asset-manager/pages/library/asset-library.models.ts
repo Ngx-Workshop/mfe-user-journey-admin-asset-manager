@@ -17,6 +17,7 @@ export interface AssetLibraryResultsViewModel {
   readonly assets: readonly Asset[];
   readonly totalAssets: number;
   readonly loading: boolean;
+  readonly moving: boolean;
   readonly error: string;
   readonly notice: string;
   readonly pendingIds: ReadonlySet<string>;
@@ -25,4 +26,10 @@ export interface AssetLibraryResultsViewModel {
 export interface AssetLibraryViewModel {
   readonly filters: AssetLibraryFiltersViewModel;
   readonly results: AssetLibraryResultsViewModel;
+}
+
+export interface AssetSelectionViewModel {
+  readonly selectedIds: ReadonlySet<string>;
+  readonly selectedAssets: readonly Asset[];
+  readonly selectedPending: boolean;
 }

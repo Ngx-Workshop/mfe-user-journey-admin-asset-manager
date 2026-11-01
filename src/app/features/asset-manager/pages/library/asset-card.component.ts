@@ -1,8 +1,6 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
   input,
   output,
 } from '@angular/core';
@@ -10,7 +8,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { Asset } from '../../models/asset.models';
-import { formatBytes } from '../../utils/asset-utils';
 import { AssetCardVisualComponent } from './asset-card-visual.component';
 
 @Component({
@@ -18,7 +15,6 @@ import { AssetCardVisualComponent } from './asset-card-visual.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AssetCardVisualComponent,
-    DatePipe,
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
@@ -27,204 +23,168 @@ import { AssetCardVisualComponent } from './asset-card-visual.component';
     <article
       class="asset-card"
       [class.asset-card--archived]="asset().archived"
+      [class.asset-card--menu-open]="menuTrigger.menuOpen"
       [attr.aria-busy]="pending()"
     >
       <ngx-asset-card-visual [asset]="asset()">
         <button
           class="asset-card__menu-trigger"
           mat-icon-button
+          #menuTrigger="matMenuTrigger"
           [matMenuTriggerFor]="actions"
           [attr.aria-label]="'Actions for ' + asset().name"
           [disabled]="pending()"
         >
           <mat-icon>more_horiz</mat-icon>
         </button>
+        <div class="asset-card__overlay">
+          <div class="asset-card__heading">
+            <button
+              class="asset-card__name"
+              [title]="asset().name"
+              (click)="details.emit()"
+              [disabled]="pending()"
+            >
+              {{ asset().name }}
+            </button>
+            @if (asset().archived) {
+              <span class="asset-card__badge">Archived</span>
+            }
+          </div>
+          @if (asset().tags.length) {
+            <div class="asset-card__tags">
+              @for (tag of asset().tags.slice(0, 3); track $index) {
+                <span class="asset-card__tag">{{ tag }}</span>
+              }
+              @if (asset().tags.length > 3) {
+                <span class="asset-card__tag"
+                  >+{{ asset().tags.length - 3 }}</span
+                >
+              }
+            </div>
+          }
+        </div>
       </ngx-asset-card-visual>
-      <div class="asset-card__body">
-        <div class="asset-card__heading">
-          <button
-            class="asset-card__name"
-            (click)="details.emit()"
-            [disabled]="pending()"
-          >
-            {{ asset().name }}
-          </button>
-          @if (asset().archived) {
-            <span class="asset-card__badge">Archived</span>
-          }
-        </div>
-        <p class="asset-card__description">
-          {{
-            asset().description ||
-              asset().originalFilename ||
-              'Add a description to this asset record.'
-          }}
-        </p>
-        <div class="asset-card__tags">
-          @for (tag of asset().tags.slice(0, 3); track $index) {
-            <span class="asset-card__tag">{{ tag }}</span>
-          }
-          @if (asset().tags.length > 3) {
-            <span class="asset-card__tag">
-              +{{ asset().tags.length - 3 }}
-            </span>
-          }
-        </div>
-        <div class="asset-card__footer">
-          <span class="asset-card__storage">
-            <i
-              class="asset-card__status"
-              [class.asset-card__status--ready]="
-                asset().storageStatus === 'READY'
-              "
-              [class.asset-card__status--failed]="
-                asset().storageStatus === 'STORAGE_FAILED'
-              "
-            ></i>
-            {{ storageLabel() }}
-          </span>
-          <span>{{ bytes(asset().sizeBytes) }}</span>
-        </div>
-        <p class="asset-card__date">
-          Folder: {{ folderName() }} · Updated
-          {{ asset().updatedAt | date: 'mediumDate' }}
-        </p>
-      </div>
-      <mat-menu #actions="matMenu">
+      <mat-menu #actions="matMenu" class="ngx-design-system-overlay">
         <button mat-menu-item (click)="details.emit()">
-          <mat-icon>info</mat-icon>
-          View details
+          <mat-icon>info</mat-icon>View details
         </button>
         <button mat-menu-item (click)="edit.emit()">
-          <mat-icon>edit</mat-icon>
-          Edit / move asset
+          <mat-icon>edit</mat-icon>Edit / move asset
         </button>
         <button mat-menu-item (click)="archive.emit()">
-          <mat-icon>
-            {{ asset().archived ? 'unarchive' : 'archive' }}
-          </mat-icon>
+          <mat-icon>{{
+            asset().archived ? 'unarchive' : 'archive'
+          }}</mat-icon>
           {{ asset().archived ? 'Restore' : 'Archive' }}
         </button>
         <button mat-menu-item (click)="remove.emit()">
-          <mat-icon>delete_outline</mat-icon>
-          Delete permanently
+          <mat-icon>delete_outline</mat-icon>Delete permanently
         </button>
       </mat-menu>
     </article>
   `,
   styles: `
+    :host {
+      display: block;
+      min-width: 0;
+    }
     .asset-card {
       overflow: hidden;
-      border: 1px solid var(--mat-sys-outline-variant, #e4e4eb);
-      border-radius: 0.75rem;
+      border: 1px solid var(--ngx-color-border);
+      border-radius: var(--ngx-radius);
+      background: var(--ngx-color-surface);
     }
-
     .asset-card__menu-trigger {
       position: absolute;
-      top: 0.5rem;
-      right: 0.5rem;
+      top: 4px;
+      right: 4px;
+      z-index: 2;
+      opacity: 0;
+      pointer-events: none;
     }
-
-    .asset-card__body {
-      padding: 1.125rem;
+    .asset-card__overlay {
+      position: absolute;
+      inset: auto 0 0;
+      box-sizing: border-box;
+      max-height: 100%;
+      overflow: auto;
+      padding: 6px 8px;
+      background: color-mix(
+        in srgb,
+        var(--ngx-color-canvas) 68%,
+        transparent
+      );
+      color: var(--ngx-color-text);
+      opacity: 0;
+      pointer-events: none;
     }
-
-    .asset-card__heading,
-    .asset-card__footer,
-    .asset-card__storage {
+    .asset-card:hover .asset-card__overlay,
+    .asset-card:focus-within .asset-card__overlay,
+    .asset-card--menu-open .asset-card__overlay,
+    .asset-card:hover .asset-card__menu-trigger,
+    .asset-card:focus-within .asset-card__menu-trigger,
+    .asset-card--menu-open .asset-card__menu-trigger {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .asset-card__heading {
       display: flex;
       align-items: center;
+      gap: 4px;
+      min-width: 0;
     }
-
-    .asset-card__heading {
-      gap: 0.5rem;
-    }
-
     .asset-card__name {
-      overflow-wrap: anywhere;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       padding: 0;
       border: 0;
+      background: transparent;
       color: inherit;
-      background: none;
-      font: inherit;
-      font-weight: 600;
+      font: 600 0.75rem/1.6 var(--ngx-font-body);
       text-align: left;
       cursor: pointer;
     }
-
     .asset-card__name:hover {
       text-decoration: underline;
     }
-
     .asset-card__name:focus-visible {
-      outline: 2px solid var(--mat-sys-primary, #6750a4);
-      outline-offset: 0.25rem;
+      outline: 2px solid var(--ngx-color-primary);
+      outline-offset: -2px;
     }
-
     .asset-card__badge,
     .asset-card__tag {
-      padding: 0.25rem 0.4375rem;
-      border-radius: 0.3125rem;
-      background: var(--mat-sys-surface-container, #f1eff6);
+      padding: 2px 4px;
+      border-radius: var(--ngx-radius);
+      background: color-mix(
+        in srgb,
+        var(--ngx-color-surface) 70%,
+        transparent
+      );
       font-size: 0.625rem;
-    }
-
-    .asset-card__description {
-      display: -webkit-box;
-      min-height: 2.375rem;
-      overflow: hidden;
       overflow-wrap: anywhere;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
-      font-size: 0.75rem;
-      line-height: 1.6;
-      opacity: 0.65;
     }
-
+    .asset-card__badge {
+      flex-shrink: 0;
+    }
     .asset-card__tags {
       display: flex;
-      min-height: 1.5rem;
       flex-wrap: wrap;
-      gap: 0.3125rem;
-      margin-bottom: 1rem;
+      gap: 4px;
+      margin-top: 4px;
     }
-
     .asset-card__tag {
       max-width: 100%;
-      overflow-wrap: anywhere;
     }
-
-    .asset-card__footer {
-      justify-content: space-between;
-      gap: 0.5rem;
-      padding-top: 0.875rem;
-      border-top: 1px solid var(--mat-sys-outline-variant, #e4e4eb);
-      font-size: 0.6875rem;
-    }
-
-    .asset-card__storage {
-      gap: 0.375rem;
-    }
-
-    .asset-card__status {
-      width: 0.375rem;
-      height: 0.375rem;
-      border-radius: 50%;
-      background: #858391;
-    }
-
-    .asset-card__status--ready {
-      background: #2e7d32;
-    }
-
-    .asset-card__status--failed {
-      background: var(--mat-sys-error, #b3261e);
-    }
-
-    .asset-card__date {
-      margin: 0.625rem 0 0;
-      font-size: 0.625rem;
-      opacity: 0.5;
+    @media (hover: none) {
+      .asset-card__overlay,
+      .asset-card__menu-trigger {
+        opacity: 1;
+        pointer-events: auto;
+      }
     }
   `,
 })
@@ -236,14 +196,4 @@ export class AssetCardComponent {
   readonly edit = output<void>();
   readonly archive = output<void>();
   readonly remove = output<void>();
-  readonly bytes = formatBytes;
-  readonly storageLabel = computed(
-    () =>
-      ({
-        READY: 'Stored',
-        PENDING_STORAGE: 'Processing storage',
-        STORAGE_FAILED: 'Storage failed',
-        AWAITING_UPLOAD: 'Storage unavailable',
-      })[this.asset().storageStatus]
-  );
 }

@@ -14,6 +14,10 @@ import {
   filter,
   finalize,
   map,
+  from,
+  mergeMap,
+  of,
+  toArray,
   tap,
 } from 'rxjs';
 import { HttpEventType } from '@angular/common/http';
@@ -23,6 +27,9 @@ import { AssetApiService } from '../api/asset-api.service';
 import { Asset, Folder } from '../models/asset.models';
 import { assetError } from '../utils/asset-utils';
 import {
+  AssetMove,
+  AssetBatchMove,
+  AssetFeedback,
   ArchiveFilter,
   AssetUploadEvent,
   AssetTypeFilter,
@@ -46,6 +53,11 @@ export class AssetManagerStore {
   private readonly loadingState = signal(false);
   private readonly errorState = signal('');
   private readonly noticeState = signal('');
+  private readonly feedbackState = signal<AssetFeedback>({
+    state: 'idle',
+    message: '',
+  });
+  private readonly movingState = signal(false);
   private readonly queryState = signal('');
   private readonly archiveFilterState =
     signal<ArchiveFilter>('active');
@@ -63,6 +75,8 @@ export class AssetManagerStore {
   readonly loading = this.loadingState.asReadonly();
   readonly error = this.errorState.asReadonly();
   readonly notice = this.noticeState.asReadonly();
+  readonly feedback = this.feedbackState.asReadonly();
+  readonly moving = this.movingState.asReadonly();
   readonly query = this.queryState.asReadonly();
   readonly archiveFilter = this.archiveFilterState.asReadonly();
   readonly typeFilter = this.typeFilterState.asReadonly();
@@ -105,6 +119,7 @@ export class AssetManagerStore {
       assets: this.filtered(),
       totalAssets: this.assets().length,
       loading: this.loading(),
+      moving: this.moving(),
       error: this.error(),
       notice: this.notice(),
       pendingIds: this.pending(),
@@ -221,14 +236,14 @@ export class AssetManagerStore {
         ),
         result.saved,
       ]);
-      this.noticeState.set('Folder saved.');
+      this.setNotice('Folder saved.');
     } else {
       this.foldersState.update((folders) =>
         folders.filter((folder) => folder._id !== result.removed)
       );
       if (this.folderFilter() === result.removed)
         this.folderFilterState.set('all');
-      this.noticeState.set('Folder deleted.');
+      this.setNotice('Folder deleted.');
     }
   }
 
@@ -261,7 +276,7 @@ export class AssetManagerStore {
       asset,
       ...assets.filter((item) => item._id !== asset._id),
     ]);
-    this.noticeState.set(
+    this.setNotice(
       uploaded ? 'File uploaded and stored.' : 'Asset saved.'
     );
   }
@@ -278,6 +293,134 @@ export class AssetManagerStore {
           return EMPTY;
         })
       );
+    });
+  }
+
+  moveAsset(move: AssetMove): void {
+    this.moveAssets({
+      assetIds: [move.assetId],
+      folderId: move.folderId,
+    });
+  }
+
+  moveAssets(move: AssetBatchMove): void {
+    const ids = [...new Set(move.assetIds)];
+    const assets = ids.map((id) =>
+      this.assets().find((asset) => asset._id === id)
+    );
+    const folder = this.folders().find(
+      (item) => item._id === move.folderId
+    );
+    if (
+      !ids.length ||
+      this.moving() ||
+      this.loading() ||
+      this.foldersLoading() ||
+      move.folderId === 'all' ||
+      (move.folderId !== null && !folder) ||
+      assets.some((asset) => !asset || this.pending().has(asset._id))
+    )
+      return;
+    const candidates = assets.filter(
+      (asset): asset is Asset =>
+        !!asset && (asset.folderId ?? null) !== move.folderId
+    );
+    if (!candidates.length) return;
+    const destination = folder?.name ?? 'Root';
+    const skipped = ids.length - candidates.length;
+    const skippedMessage = skipped
+      ? ' ' + skipped + ' already in that folder.'
+      : '';
+    this.movingState.set(true);
+    for (const asset of candidates) this.setPending(asset._id, true);
+    this.errorState.set('');
+    this.setNotice(
+      candidates.length === 1
+        ? 'Moving “' + candidates[0].name + '”…'
+        : 'Moving ' + candidates.length + ' assets…',
+      'saving'
+    );
+    from(candidates)
+      .pipe(
+        mergeMap(
+          (asset) =>
+            this.api
+              .update(asset._id, { folderId: move.folderId })
+              .pipe(
+                tap((saved) =>
+                  this.assetsState.update((items) =>
+                    items.map((item) =>
+                      item._id === saved._id ? saved : item
+                    )
+                  )
+                ),
+                map(() => ({ asset, error: null as unknown })),
+                catchError((error) =>
+                  of({ asset, error: error as unknown })
+                ),
+                finalize(() => this.setPending(asset._id, false))
+              ),
+          4
+        ),
+        toArray(),
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          for (const asset of candidates)
+            this.setPending(asset._id, false);
+          this.movingState.set(false);
+        })
+      )
+      .subscribe((results) => {
+        const failures = results.filter(
+          (result) => result.error !== null
+        );
+        const moved = results.length - failures.length;
+        if (!failures.length) {
+          const message =
+            candidates.length === 1
+              ? 'Moved “' +
+                candidates[0].name +
+                '” to ' +
+                destination +
+                '.'
+              : 'Moved ' + moved + ' assets to ' + destination + '.';
+          this.setNotice(message + skippedMessage);
+        } else {
+          this.noticeState.set('');
+          const message =
+            candidates.length === 1
+              ? 'Could not move “' +
+                candidates[0].name +
+                '”. ' +
+                assetError(failures[0].error) +
+                ' Drag it again to retry.'
+              : 'Moved ' +
+                moved +
+                ' of ' +
+                results.length +
+                ' assets to ' +
+                destination +
+                '. ' +
+                failures.length +
+                ' could not be moved. ' +
+                assetError(failures[0].error) +
+                ' Drag the selection again to retry.';
+          this.feedbackState.set({
+            state: 'error',
+            message: message + skippedMessage,
+          });
+        }
+      });
+  }
+
+  private setNotice(
+    message: string,
+    state: 'saving' | 'saved' = 'saved'
+  ): void {
+    this.noticeState.set(message);
+    this.feedbackState.set({
+      state: message ? state : 'idle',
+      message,
     });
   }
 
@@ -298,7 +441,7 @@ export class AssetManagerStore {
               item._id === saved._id ? saved : item
             )
           );
-          this.noticeState.set(
+          this.setNotice(
             saved.archived ? 'Asset archived.' : 'Asset restored.'
           );
         },
@@ -321,7 +464,7 @@ export class AssetManagerStore {
           this.assetsState.update((assets) =>
             assets.filter((item) => item._id !== asset._id)
           );
-          this.noticeState.set('Asset deleted.');
+          this.setNotice('Asset deleted.');
         },
         error: (error) => this.setError(error),
       });

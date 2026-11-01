@@ -1,8 +1,16 @@
 export type ArchiveFilter = 'active' | 'archived' | 'all';
 export type AssetTypeFilter =
-  'all' | 'image' | 'video' | 'audio' | 'document' | 'record';
+  | 'all'
+  | 'image'
+  | 'video'
+  | 'audio'
+  | 'document'
+  | 'record';
 export type StorageFilter =
-  'all' | 'PENDING_STORAGE' | 'READY' | 'STORAGE_FAILED';
+  | 'all'
+  | 'PENDING_STORAGE'
+  | 'READY'
+  | 'STORAGE_FAILED';
 import type { Asset, Folder } from './asset.models';
 
 export type FolderFilter = 'all' | null | string;
@@ -14,3 +22,17 @@ export type FolderEditorData =
 export type AssetUploadEvent =
   | { kind: 'progress'; percent: number | null }
   | { kind: 'complete'; asset: Asset };
+
+export interface AssetMove {
+  readonly assetId: string;
+  readonly folderId: string | null;
+}
+
+export interface AssetBatchMove {
+  readonly assetIds: readonly string[];
+  readonly folderId: string | null;
+}
+export interface AssetFeedback {
+  readonly state: 'idle' | 'saving' | 'saved' | 'error';
+  readonly message: string;
+}

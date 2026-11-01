@@ -1,3 +1,4 @@
+import { NgxButton } from '@tmdjr/ngx-workshop-design-system';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -28,6 +29,7 @@ import { assetForm, metadata } from '../../forms/asset-form';
   selector: 'ngx-asset-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    NgxButton,
     AssetFileInputComponent,
     ReactiveFormsModule,
     MatDialogModule,
@@ -66,7 +68,7 @@ import { assetForm, metadata } from '../../forms/asset-form';
           appearance="outline"
         >
           <mat-label>Folder</mat-label>
-          <mat-select
+          <mat-select panelClass="ngx-design-system-overlay ngx-select-panel"
             formControlName="folderId"
             [canSelectNullableOptions]="true"
           >
@@ -150,11 +152,11 @@ import { assetForm, metadata } from '../../forms/asset-form';
       }
     </mat-dialog-content>
     <mat-dialog-actions align="end"
-      ><button mat-button (click)="ref.close()" [disabled]="busy()">
+      ><button mat-button ngxButton surface="outline" (click)="ref.close()" [disabled]="busy()">
         Cancel
       </button>
       <button
-        mat-flat-button
+        mat-flat-button ngxButton
         type="submit"
         form="asset-editor-form"
         [disabled]="
@@ -173,7 +175,7 @@ import { assetForm, metadata } from '../../forms/asset-form';
       }
 
       .asset-editor__error {
-        color: var(--mat-sys-error, #b3261e);
+        color: var(--ngx-color-error);
       }
     `,
   ],

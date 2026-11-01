@@ -2,71 +2,92 @@ import {
   ChangeDetectionStrategy,
   Component,
   inject,
+  signal,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { Asset, Folder } from '../../models/asset.models';
-import { AssetFolderBrowserComponent } from './asset-folder-browser.component';
-import { AssetManagerDialogs } from './asset-manager-dialogs';
-import { AssetLibraryComponent } from './asset-library.component';
-import { MfeAssetManagerHeader } from './asset-manager-header.component';
-import { AssetManagerSummaryComponent } from './asset-manager-summary.component';
+import { MatInputModule } from '@angular/material/input';
+import {
+  NgxActionBar,
+  NgxButton,
+  NgxInlineStatus,
+  NgxSaveFeedback,
+} from '@tmdjr/ngx-workshop-design-system';
 import {
   ArchiveFilter,
   AssetTypeFilter,
   StorageFilter,
 } from '../../models/asset-manager.models';
+import { Asset, Folder } from '../../models/asset.models';
 import { AssetManagerStore } from '../../state/asset-manager.store';
+import { AssetDragSession } from './asset-drag-drop';
+import { AssetFolderBrowserComponent } from './asset-folder-browser.component';
+import { AssetLibraryComponent } from './asset-library.component';
+import { AssetManagerDialogs } from './asset-manager-dialogs';
+import { AssetManagerSummaryComponent } from './asset-manager-summary.component';
 
 @Component({
   selector: 'ngx-asset-manager',
+  host: {
+    '[style.--asset-action-bar-height.px]': 'actionBarHeight()',
+  },
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    NgxButton,
     AssetLibraryComponent,
     AssetManagerSummaryComponent,
+    MatFormFieldModule,
+    MatInputModule,
     MatButtonModule,
     MatIconModule,
-    MfeAssetManagerHeader,
+    NgxActionBar,
+    NgxInlineStatus,
+    NgxSaveFeedback,
     AssetFolderBrowserComponent,
   ],
-  providers: [AssetManagerDialogs],
+  providers: [AssetManagerDialogs, AssetDragSession],
   template: `
-    <ngx-mfe-asset-manager-header />
-    <nav class="asset-manager__actions" aria-label="Asset actions">
-      <button mat-flat-button (click)="edit()">
+    <ngx-action-bar
+      heading="Asset Manager"
+      (heightChange)="actionBarHeight.set($event)"
+    >
+      <ngx-inline-status
+        ngxActionBarIndicators
+        [label]="
+          loading() ? 'Syncing library…' : assets().length + ' assets'
+        "
+        [tone]="error() ? 'error' : 'neutral'"
+      />
+      @if (store.feedback().state !== 'idle') {
+      <ngx-save-feedback
+        ngxActionBarFeedback
+        [state]="store.feedback().state"
+        [message]="store.feedback().message"
+      />
+      }
+      <!-- <button
+        mat-flat-button
+        ngxButton
+        surface="outline"
+        (click)="edit()"
+      >
         <mat-icon>add</mat-icon>
         Create record
-      </button>
-      <button mat-flat-button (click)="edit(undefined, true)">
+      </button> -->
+      <button
+        mat-flat-button
+        ngxButton
+        shape="chevron"
+        surface="outline"
+        (click)="edit(undefined, true)"
+      >
         <mat-icon>upload</mat-icon>
         Upload file
       </button>
-    </nav>
+    </ngx-action-bar>
 
     <main class="asset-manager">
-      <ngx-asset-manager-summary
-        [total]="assets().length"
-        [active]="activeCount()"
-        [received]="receivedCount()"
-        [archived]="archivedCount()"
-      />
-      <ngx-asset-folder-browser
-        [folders]="store.folders()"
-        [selected]="store.folderFilter()"
-        [loading]="store.foldersLoading()"
-        [error]="store.foldersError()"
-        (selectionChange)="store.setFolderFilter($event)"
-        (refresh)="store.refreshFolders()"
-        (create)="editFolder()"
-        (rename)="editFolder($event)"
-        (remove)="deleteFolder($event)"
-      />
-      <p class="asset-manager__storage-note">
-        <mat-icon>info_outline</mat-icon>
-        Folders organize assets without changing stored URLs.
-        Identical file content cannot be uploaded twice, including
-        archived assets.
-      </p>
       <ngx-asset-library
         [viewModel]="store.libraryViewModel()"
         (refresh)="refresh()"
@@ -76,40 +97,85 @@ import { AssetManagerStore } from '../../state/asset-manager.store';
         (edit)="edit($event)"
         (archive)="archive($event)"
         (remove)="delete($event)"
-        (queryChange)="setQuery($event)"
         (archiveFilterChange)="setArchiveFilter($event)"
         (typeFilterChange)="setTypeFilter($event)"
         (storageFilterChange)="setStorageFilter($event)"
-      />
+      >
+        <mat-form-field
+          assetLibrarySearch
+          class="asset-manager__search"
+          appearance="outline"
+          subscriptSizing="dynamic"
+        >
+          <mat-label>Search assets</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
+          <input
+            #searchInput
+            matInput
+            [value]="store.query()"
+            (input)="setQuery(searchInput.value)"
+            placeholder="Name, filename, description or tag"
+          />
+        </mat-form-field>
+        <ngx-asset-manager-summary
+          assetLibraryOverview
+          [total]="assets().length"
+          [active]="activeCount()"
+          [received]="receivedCount()"
+          [archived]="archivedCount()"
+        />
+        <ngx-asset-folder-browser
+          assetLibraryFolders
+          [folders]="store.folders()"
+          [selected]="store.folderFilter()"
+          [loading]="store.foldersLoading()"
+          [error]="store.foldersError()"
+          [pendingIds]="store.pending()"
+          [moving]="store.moving()"
+          (assetMove)="store.moveAssets($event)"
+          (selectionChange)="store.setFolderFilter($event)"
+          (refresh)="store.refreshFolders()"
+          (create)="editFolder()"
+          (rename)="editFolder($event)"
+          (remove)="deleteFolder($event)"
+        />
+        <p assetLibraryGuidance class="asset-manager__storage-note">
+          <mat-icon>info_outline</mat-icon>
+          Folders organize assets without changing stored URLs.
+          Identical file content cannot be uploaded twice, including
+          archived assets.
+        </p>
+      </ngx-asset-library>
     </main>
   `,
   styles: `
+    @use '@angular/material' as mat;
     :host {
       display: block;
-      color: var(--mat-sys-on-surface, #242731);
+      color: var(--ngx-color-text);
+      font-family: var(--ngx-font-body);
+      --ngx-action-bar-top: var(--asset-toolbar-top, 96px);
     }
 
     .asset-manager {
-      max-width: 1440px;
-      margin: auto;
-      padding: 2.5rem 2rem;
+      padding: var(--ngx-space-4);
     }
 
-    .asset-manager__actions {
-      position: sticky;
-      top: 3.5rem;
-      z-index: 10;
-      display: flex;
-      min-height: 4rem;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 0.5rem;
-      padding: 0 1.5rem;
-      background: var(--mat-sys-primary);
-      box-shadow: 0 0.5rem 1.5rem rgba(20, 24, 40, 0.04);
-      backdrop-filter: blur(1rem);
+    .asset-manager__search {
+      margin-top: var(--ngx-space-2);
+      width: 100%;
+      min-width: 0;
+      font-size: 0.8rem;
+      @include mat.form-field-overrides(
+        (
+          container-height: 44px,
+          container-vertical-padding: 10px,
+        )
+      );
     }
-
+    .asset-manager__search mat-icon {
+      color: var(--ngx-color-muted);
+    }
     .asset-manager__storage-note {
       display: flex;
       align-items: center;
@@ -117,7 +183,7 @@ import { AssetManagerStore } from '../../state/asset-manager.store';
       gap: 0.5rem;
       font-size: 0.75rem;
       line-height: 1.6;
-      opacity: 0.65;
+      color: var(--ngx-color-muted);
     }
 
     .asset-manager__storage-note mat-icon {
@@ -129,11 +195,11 @@ import { AssetManagerStore } from '../../state/asset-manager.store';
 
     @media (max-width: 720px) {
       .asset-manager {
-        padding: 1.5rem 1rem;
+        padding: 0.75rem;
       }
 
-      .asset-manager__actions {
-        flex-wrap: wrap;
+      :host {
+        --ngx-action-bar-top: var(--asset-toolbar-top, 76px);
       }
 
       .asset-manager__storage-note {
@@ -143,6 +209,7 @@ import { AssetManagerStore } from '../../state/asset-manager.store';
   `,
 })
 export class AssetManagerComponent {
+  readonly actionBarHeight = signal(56);
   readonly store = inject(AssetManagerStore);
   private readonly dialogs = inject(AssetManagerDialogs);
 

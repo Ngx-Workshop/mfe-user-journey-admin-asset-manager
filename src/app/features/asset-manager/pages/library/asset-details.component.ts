@@ -1,3 +1,4 @@
+import { NgxButton } from '@tmdjr/ngx-workshop-design-system';
 import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -14,7 +15,7 @@ import { formatBytes } from '../../utils/asset-utils';
 @Component({
   selector: 'ngx-asset-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, MatDialogModule, MatButtonModule],
+  imports: [NgxButton, DatePipe, MatDialogModule, MatButtonModule],
   template: `
     <h2 mat-dialog-title class="asset-details__title">
       {{ asset.name }}
@@ -67,13 +68,15 @@ import { formatBytes } from '../../utils/asset-utils';
       </dl>
     </mat-dialog-content>
     <mat-dialog-actions align="end"
-      ><button mat-button mat-dialog-close>
+      ><button mat-button ngxButton surface="outline" mat-dialog-close>
         Close
       </button></mat-dialog-actions
     >
   `,
   styles: [
     `
+      .asset-details__title { overflow-wrap: anywhere; }
+      .asset-details a { color: var(--ngx-color-primary); }
       .asset-details__list {
         display: grid;
         grid-template-columns: 140px minmax(0, 1fr);
@@ -81,7 +84,7 @@ import { formatBytes } from '../../utils/asset-utils';
       }
 
       .asset-details__list dt {
-        opacity: 0.7;
+        color: var(--ngx-color-muted);
       }
 
       .asset-details__list dd {
@@ -90,7 +93,7 @@ import { formatBytes } from '../../utils/asset-utils';
       }
 
       .asset-details__checksum {
-        font-family: monospace;
+        font-family: var(--ngx-font-mono);
       }
 
       @media (max-width: 480px) {
@@ -124,7 +127,7 @@ export class AssetDetailsComponent {
 @Component({
   selector: 'ngx-delete-asset',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatDialogModule, MatButtonModule],
+  imports: [NgxButton, MatDialogModule, MatButtonModule],
   template: `
     <h2 mat-dialog-title class="delete-asset__title">
       Delete asset?
@@ -139,8 +142,8 @@ export class AssetDetailsComponent {
       </p>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button [mat-dialog-close]="false">Cancel</button>
-      <button mat-flat-button [mat-dialog-close]="true">
+      <button mat-button ngxButton surface="outline" [mat-dialog-close]="false">Cancel</button>
+      <button mat-flat-button ngxButton tone="danger" [mat-dialog-close]="true">
         Delete permanently
       </button>
     </mat-dialog-actions>

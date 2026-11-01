@@ -14,6 +14,8 @@ below with relative links. A feature folder contains `spec.md`, `plan.md`,
 | 002 Folders and duplicates | Implemented; integration pending | [Spec](002-folders-and-duplicates/spec.md) | [Plan](002-folders-and-duplicates/plan.md) | [Tasks](002-folders-and-duplicates/tasks.md) | [Handoff](002-folders-and-duplicates/handoff.md) |
 | 003 MVVM refactor | Complete | [Spec](003-mvvm-refactor/spec.md) | [Plan](003-mvvm-refactor/plan.md) | [Tasks](003-mvvm-refactor/tasks.md) | [Handoff](003-mvvm-refactor/handoff.md) |
 
+| 004 Design system | Complete | [Spec](004-design-system/spec.md) | [Plan](004-design-system/plan.md) | [Tasks](004-design-system/tasks.md) | [Handoff](004-design-system/handoff.md) |
+
 Keep one row per feature, retain completed records for rationale, and update
 status when work changes. Select work from the user's request and this index;
 the largest folder number is not automatically the active feature.

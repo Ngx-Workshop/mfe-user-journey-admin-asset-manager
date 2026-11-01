@@ -1,3 +1,4 @@
+import { NgxButton } from '@tmdjr/ngx-workshop-design-system';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -28,6 +29,7 @@ import {
   selector: 'ngx-asset-folder-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    NgxButton,
     ReactiveFormsModule,
     MatDialogModule,
     MatButtonModule,
@@ -87,16 +89,16 @@ import {
       }
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button (click)="ref.close()" [disabled]="busy()">
+      <button mat-button ngxButton surface="outline" (click)="ref.close()" [disabled]="busy()">
         Cancel
       </button>
       @if (data.remove) {
-        <button mat-flat-button (click)="save()" [disabled]="busy()">
+        <button mat-flat-button ngxButton tone="danger" (click)="save()" [disabled]="busy()">
           Delete folder
         </button>
       } @else {
         <button
-          mat-flat-button
+          mat-flat-button ngxButton
           type="submit"
           form="asset-folder-form"
           [disabled]="busy() || name.invalid"
@@ -112,7 +114,7 @@ import {
       margin-top: 0.5rem;
     }
     .asset-folder-editor__error {
-      color: var(--mat-sys-error, #b3261e);
+      color: var(--ngx-color-error);
     }
   `,
 })

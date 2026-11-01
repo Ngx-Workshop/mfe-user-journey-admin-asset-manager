@@ -49,6 +49,74 @@ use disposable data in an approved environment for mutation checks.
 
 ## Current verification and limitations
 
+2026-11-01 header/compact-card follow-up: selection controls replace Browse's asset
+count in its public header slot. Select all/count share a row; Clear selection is
+an underlined native text button below. AssetLibrary owns selection and passes a
+value snapshot to the results. Cards are preview-only with hover/focus caption and
+ellipsis controls, plus coarse-pointer visibility. Checkbox backgrounds are
+transparent and ripple/state-layer halo is disabled. Build/license, layout/diff and
+53 tests pass, including header/grid synchronization, batch move regressions,
+long-name truncation, compact geometry and keyboard focus. The old unused card
+import warnings are resolved. Live desktop/mobile checks cover two selected photos,
+header row layout, hover menus/captions, transparent checkboxes and 390px no-overflow
+layout. No live records were changed.
+
+2026-11-01 multi-select: labelled photo checkboxes, Select all and Clear selection
+support grouped folder drags. Hidden selection is pruned; unchecked-card drags move
+only that card. Batch PATCH calls are bounded to four, commit each server success,
+retain failed records, and skip successful/same-folder records on retry. Typed
+save/move feedback now lives in the action bar. Organize is 290px wide; Browse's
+filtered count is right-aligned in its header, including narrow layouts.
+Build/license, source layout, diff checks and 51 tests pass. DOM/HTTP tests verify
+multi-select payloads, partial failure/retry, Root batches, selection pruning and
+notification placement. Live checks verify selection, safe no-op group drag,
+filter/select-all/clear behavior and 390px layout with no overflow. Default viewport
+and empty selection were restored; no live mutations were performed. Existing
+unused card imports still warn. The local static preview was restarted on 4201.
+
+2026-11-01 drag moves and folder menus: asset cards can be dropped onto Root or
+named folder nodes. Folder-only PATCH writes are pending-guarded and commit only
+server success; error messages retain data and allow retry. Node hover/focus menus
+replace folder CTAs; normal Refresh buttons are removed, with error-only retries
+retained. Organize matches the available Assets-panel height. Build/license,
+layout/diff checks and all 46 ChromeHeadless tests pass, including DOM native drag
+sequences through the real manager/store and mocked HTTP, failure/retry and Root
+null payloads. Browser checks verify menus, rename prefill (cancelled), unchanged
+selection, full-height panels, a no-op drag to All folders and 390px layout with no
+overflow. No live write was performed. Existing unused card imports still warn.
+
+2026-11-01 folder workspace: Folders and Assets are sibling inner panels within
+Asset library; the filter console no longer contains folders. A Material tree
+replaces the folder selector with All folders → Root/named folders. Flat API
+contracts and folder mutations are unchanged. Nested bodies fit the parent
+workspace; inner panels stack below 1201px. Container breakpoints adapt the
+existing dense photo grid. Build/license, layout/diff checks and 43 tests pass.
+Live read-only checks cover Root filtering, named-folder actions/rename prefill,
+collapse/expand, keyboard selection and 390/1024px layouts without overflow.
+Existing unused card imports still warn; unrelated card work was preserved.
+
+2026-10-31 layout follow-up: the asset library now uses the same full-width
+console/results workspace as the migrated catalogs. At 1920 × 907, the console
+was 320px wide and results panel 1552px; both fit above the viewport bottom and
+scroll independently. At 390 × 844, panels stack, Show controls expands the rail,
+page width remains 390px and desktop body sizing clears. Search, Root folder
+filtering and empty-state reset pass with live reads. Build/layout/diff checks and
+all 36 ChromeHeadless tests pass. No live writes were performed.
+
+2026-10-31 design system migration: production build (with nonempty license output),
+layout check and all 36 ChromeHeadless behavior tests pass. Shared action bar,
+panels, buttons, status components and semantic tokens replace the legacy header
+and local visual treatments. Standalone loads ngx.theme(); federated views inherit
+the shell theme. The authenticated admin shell loaded the local remote with 22
+assets. Search reduced Angular to seven matches; unmatched search showed the empty
+state and Reset filters restored the library. Root folder filtering, asset details,
+asset action menu, upload/create/folder dialogs and blank-name validation were
+checked without live writes. At 390px, page width stayed 390px and the upload
+dialog measured 370.5px wide. Desktop viewport and filters were restored.
+See [migration handoff](../specs/004-design-system/handoff.md). Historical mutation
+limitations below remain; existing mocked tests cover write success and recovery.
+
+
 2026-10-07 source organization: moved feature code under
 `src/app/features/asset-manager/` and mirrored suites under
 `testing/app/features/asset-manager/`. Reused the shared source layout checker,

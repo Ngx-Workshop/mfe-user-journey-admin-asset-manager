@@ -5,8 +5,6 @@ import {
   output,
 } from '@angular/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { AssetLibraryFiltersViewModel } from './asset-library.models';
 import {
@@ -18,30 +16,13 @@ import {
 @Component({
   selector: 'ngx-asset-library-filters',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    MatFormFieldModule,
-    MatIconModule,
-    MatInputModule,
-    MatSelectModule,
-  ],
+  imports: [MatFormFieldModule, MatSelectModule],
   template: `
     <div class="asset-filters" aria-label="Filter assets">
-      <mat-form-field
-        appearance="outline"
-        class="asset-filters__search"
-      >
-        <mat-label>Search assets</mat-label>
-        <mat-icon matPrefix>search</mat-icon>
-        <input
-          matInput
-          [value]="viewModel().query"
-          (input)="queryChange.emit(inputValue($event))"
-          placeholder="Name, filename, description or tag"
-        />
-      </mat-form-field>
-      <mat-form-field appearance="outline">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>Visibility</mat-label>
         <mat-select
+          panelClass="ngx-design-system-overlay ngx-select-panel"
           [value]="viewModel().archiveFilter"
           (selectionChange)="archiveFilterChange.emit($event.value)"
         >
@@ -50,9 +31,10 @@ import {
           <mat-option value="all">All assets</mat-option>
         </mat-select>
       </mat-form-field>
-      <mat-form-field appearance="outline">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>File type</mat-label>
         <mat-select
+          panelClass="ngx-design-system-overlay ngx-select-panel"
           [value]="viewModel().typeFilter"
           (selectionChange)="typeFilterChange.emit($event.value)"
         >
@@ -66,9 +48,10 @@ import {
           <mat-option value="record">Metadata records</mat-option>
         </mat-select>
       </mat-form-field>
-      <mat-form-field appearance="outline">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>Storage</mat-label>
         <mat-select
+          panelClass="ngx-design-system-overlay ngx-select-panel"
           [value]="viewModel().storageFilter"
           (selectionChange)="storageFilterChange.emit($event.value)"
         >
@@ -85,46 +68,37 @@ import {
     </div>
   `,
   styles: `
+    @use '@angular/material' as mat;
+    :host {
+      display: block;
+      min-width: 0;
+      @include mat.form-field-overrides(
+        (
+          container-height: 44px,
+          container-vertical-padding: 10px,
+        )
+      );
+    }
     .asset-filters {
       display: grid;
-      grid-template-columns: minmax(15rem, 2fr) repeat(
-          3,
-          minmax(8.75rem, 1fr)
-        );
-      gap: 0.875rem;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
     }
-
-    .asset-filters__search mat-icon {
-      margin: 0 0.5rem;
-      opacity: 0.55;
+    mat-form-field {
+      width: 100%;
+      min-width: 0;
+      font-size: 0.8rem;
     }
-
-    @media (max-width: 1100px) {
+    @media (min-width: 601px) and (max-width: 900px) {
       .asset-filters {
         grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-
-      .asset-filters__search {
-        grid-column: 1 / -1;
-      }
-    }
-
-    @media (max-width: 720px) {
-      .asset-filters {
-        grid-template-columns: 1fr;
-        gap: 0;
       }
     }
   `,
 })
 export class AssetLibraryFiltersComponent {
   readonly viewModel = input.required<AssetLibraryFiltersViewModel>();
-  readonly queryChange = output<string>();
   readonly archiveFilterChange = output<ArchiveFilter>();
   readonly typeFilterChange = output<AssetTypeFilter>();
   readonly storageFilterChange = output<StorageFilter>();
-
-  inputValue(event: Event): string {
-    return (event.target as HTMLInputElement).value;
-  }
 }

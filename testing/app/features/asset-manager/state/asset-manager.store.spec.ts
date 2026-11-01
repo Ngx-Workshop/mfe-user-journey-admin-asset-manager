@@ -60,6 +60,115 @@ describe('Asset manager singleton and operation streams', () => {
     expect(store.assets()).toEqual([asset]);
   });
 
+  it('ignores stale, same-folder and missing-asset move intentions without issuing writes', () => {
+    store.refresh();
+    http.expectOne('/api/uploader').flush([asset]);
+    store.moveAsset({ assetId: 'missing', folderId: null });
+    store.moveAsset({
+      assetId: asset._id,
+      folderId: 'deleted-folder',
+    });
+    store.moveAsset({ assetId: asset._id, folderId: 'all' });
+    store.moveAsset({ assetId: asset._id, folderId: null });
+    http.expectNone('/api/uploader/asset');
+    expect(store.assets()).toEqual([asset]);
+    expect(store.pending().size).toBe(0);
+  });
+
+  it('bounds batch concurrency, skips duplicates and same-folder assets, and retries only failed moves', () => {
+    const folder = {
+      _id: 'folder',
+      name: 'Brand',
+      version: 0,
+      createdAt: '',
+      updatedAt: '',
+    };
+    const assets = Array.from({ length: 5 }, (_, i) => ({
+      ...asset,
+      _id: 'asset-' + i,
+    }));
+    const alreadyMoved = {
+      ...asset,
+      _id: 'already',
+      folderId: folder._id,
+    };
+    store.refresh();
+    http.expectOne('/api/uploader').flush([...assets, alreadyMoved]);
+    store.refreshFolders();
+    http.expectOne('/api/uploader/folders').flush([folder]);
+    const move = {
+      assetIds: [
+        ...assets.map((item) => item._id),
+        assets[0]._id,
+        alreadyMoved._id,
+      ],
+      folderId: folder._id,
+    };
+    store.moveAssets(move);
+    const initial = http.match(
+      (request) => request.method === 'PATCH'
+    );
+    expect(initial.length).toBe(4);
+    expect(store.pending().size).toBe(5);
+    for (const request of initial)
+      expect(request.request.body).toEqual({ folderId: folder._id });
+    store.moveAssets(move);
+    http.expectNone((request) => request.method === 'PATCH');
+    initial[0].flush(null, {
+      status: 503,
+      statusText: 'Unavailable',
+    });
+    const queued = http.expectOne('/api/uploader/asset-4');
+    initial
+      .slice(1)
+      .forEach((request, index) =>
+        request.flush({ ...assets[index + 1], folderId: folder._id })
+      );
+    queued.flush({ ...assets[4], folderId: folder._id });
+    expect(store.moving()).toBeFalse();
+    expect(store.pending().size).toBe(0);
+    expect(
+      store.assets().find((item) => item._id === assets[0]._id)
+        ?.folderId
+    ).toBeUndefined();
+    expect(store.feedback().state).toBe('error');
+    expect(store.feedback().message).toContain('Moved 4 of 5 assets');
+    store.moveAssets(move);
+    const retry = http.expectOne('/api/uploader/asset-0');
+    http.expectNone((request) => request.method === 'PATCH');
+    retry.flush({ ...assets[0], folderId: folder._id });
+    expect(store.feedback().state).toBe('saved');
+    expect(
+      store.assets().every((item) => item.folderId === folder._id)
+    ).toBeTrue();
+  });
+
+  it('moves a selected group back to Root with explicit null folderId and accurate feedback', () => {
+    const assets = [
+      { ...asset, _id: 'first', folderId: 'brand' },
+      { ...asset, _id: 'second', folderId: 'brand' },
+    ];
+    store.refresh();
+    http.expectOne('/api/uploader').flush(assets);
+    store.moveAssets({
+      assetIds: ['first', 'second'],
+      folderId: null,
+    });
+    const requests = http.match(
+      (request) => request.method === 'PATCH'
+    );
+    expect(requests.length).toBe(2);
+    requests.forEach((request, index) => {
+      expect(request.request.body).toEqual({ folderId: null });
+      request.flush({ ...assets[index], folderId: null });
+    });
+    expect(store.feedback().message).toBe('Moved 2 assets to Root.');
+    expect(
+      store.assets().every((item) => item.folderId === null)
+    ).toBeTrue();
+    expect(store.pending().size).toBe(0);
+  });
+
   it('starts details pending state only when subscribed and cleans up cancellation', () => {
     const details = store.loadDetails(asset);
     expect(store.pending().size).toBe(0);

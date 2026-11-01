@@ -38,31 +38,32 @@ import { mediaCategory } from '../../utils/asset-manager.utils';
     .asset-card__visual {
       position: relative;
       display: flex;
-      min-height: 8.75rem;
+      height: 11rem;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 0.625rem;
-      background: var(--mat-sys-surface-container, #f1eff6);
+      background: var(--ngx-color-surface-high);
     }
 
     .asset-card__visual--image {
-      background: var(--mat-sys-primary-container, #eaddff);
+      background: var(--ngx-color-surface-high);
     }
 
     .asset-card__type-icon {
       width: 2.625rem;
       height: 2.625rem;
-      color: var(--mat-sys-primary, #6750a4);
+      color: var(--ngx-color-primary);
       font-size: 2.625rem;
       opacity: 0.8;
     }
 
     .asset-card__preview {
       width: 100%;
-      min-height: 8.75rem;
-      max-height: 8rem;
-      object-fit: cover;
+      height: 11rem;
+      display: block;
+      object-fit: contain;
+      padding: var(--ngx-space-2);
     }
 
     .asset-card__media-type {

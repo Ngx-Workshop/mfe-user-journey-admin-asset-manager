@@ -30,6 +30,8 @@ export class AssetManagerDialogs {
             ? null
             : this.store.folderFilter(),
       },
+      panelClass: 'ngx-design-system-overlay',
+      backdropClass: 'ngx-design-system-backdrop',
       width: '560px',
       maxWidth: '95vw',
     });
@@ -48,6 +50,8 @@ export class AssetManagerDialogs {
               this.store.folders()
             ),
           },
+          panelClass: 'ngx-design-system-overlay',
+          backdropClass: 'ngx-design-system-backdrop',
           width: '640px',
           maxWidth: '95vw',
         });
@@ -65,6 +69,8 @@ export class AssetManagerDialogs {
   private openFolderEditor(data: FolderEditorData): void {
     this.dialog.open(AssetFolderEditorComponent, {
       data,
+      panelClass: 'ngx-design-system-overlay',
+      backdropClass: 'ngx-design-system-backdrop',
       width: '440px',
       maxWidth: '95vw',
     });
@@ -74,6 +80,8 @@ export class AssetManagerDialogs {
     this.dialog
       .open(DeleteAssetComponent, {
         data: asset,
+        panelClass: 'ngx-design-system-overlay',
+        backdropClass: 'ngx-design-system-backdrop',
         width: '440px',
         maxWidth: '95vw',
       })

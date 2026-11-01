@@ -17,6 +17,7 @@ import {
 } from '../../src/app/features/asset-manager/models/asset.models';
 import { AssetEditorComponent } from '../../src/app/features/asset-manager/pages/library/asset-editor.component';
 import { AssetFolderEditorComponent } from '../../src/app/features/asset-manager/pages/library/asset-folder-editor.component';
+import { AssetCardComponent } from '../../src/app/features/asset-manager/pages/library/asset-card.component';
 
 const logo: Asset = {
   _id: 'logo',
@@ -66,6 +67,38 @@ describe('Asset manager', () => {
     http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
+  it('truncates long card names on one line with and without an archived badge', () => {
+    const fixture = TestBed.createComponent(AssetCardComponent);
+    const host: HTMLElement = fixture.nativeElement;
+    host.style.display = 'block';
+    host.style.width = '180px';
+    const name = 'A long asset name with spaces '.repeat(4);
+
+    for (const archived of [false, true]) {
+      fixture.componentRef.setInput('asset', {
+        ...record,
+        name,
+        archived,
+      });
+      fixture.detectChanges();
+
+      const button = host.querySelector<HTMLButtonElement>(
+        '.asset-card__name'
+      )!;
+      const heading = host.querySelector<HTMLElement>(
+        '.asset-card__heading'
+      )!;
+      const style = getComputedStyle(button);
+      expect(button.textContent?.trim()).toBe(name.trim());
+      expect(style.whiteSpace).toBe('nowrap');
+      expect(style.overflow).toBe('hidden');
+      expect(style.textOverflow).toBe('ellipsis');
+      expect(button.scrollWidth).toBeGreaterThan(button.clientWidth);
+      expect(heading.scrollWidth).toBeLessThanOrEqual(
+        heading.clientWidth
+      );
+    }
+  });
   function setup() {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
@@ -167,6 +200,457 @@ describe('Asset manager', () => {
       .flush(null, { status: 204, statusText: 'No Content' });
     expect(manager.assets()).toEqual([]);
   });
+  it('puts two-row selection controls in the Browse header and uses transparent, halo-free photo checkboxes', async () => {
+    const { fixture } = setup();
+    http.expectOne('/api/uploader').flush([logo]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    const header = element.querySelector(
+      '.asset-library__browse-panel ngx-asset-selection-toolbar'
+    )!;
+    expect(header).not.toBeNull();
+    expect(
+      element.querySelector(
+        'ngx-asset-library-results ngx-asset-selection-toolbar'
+      )
+    ).toBeNull();
+    expect(
+      element.querySelector('.asset-library__asset-count')
+    ).toBeNull();
+    const row = header.querySelector<HTMLElement>(
+      '.asset-selection__row'
+    )!;
+    const clear = header.querySelector<HTMLButtonElement>(
+      '.asset-selection__clear'
+    )!;
+    expect(row.textContent).toContain('Select all');
+    expect(row.textContent).toContain('0 selected');
+    expect(getComputedStyle(clear).textDecorationLine).toContain(
+      'underline'
+    );
+    expect(clear.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+      row.getBoundingClientRect().bottom
+    );
+    const checkbox = element.querySelector<HTMLElement>(
+      '.asset-results__checkbox'
+    )!;
+    checkbox.querySelector<HTMLInputElement>('input')!.click();
+    fixture.detectChanges();
+    expect(row.textContent).toContain('1 selected');
+    expect(getComputedStyle(checkbox).backgroundColor).toBe(
+      'rgba(0, 0, 0, 0)'
+    );
+    expect(getComputedStyle(checkbox).boxShadow).toBe('none');
+    expect(
+      getComputedStyle(checkbox)
+        .getPropertyValue(
+          '--mat-checkbox-selected-focus-state-layer-opacity'
+        )
+        .trim()
+    ).toBe('0');
+    expect(clear.disabled).toBeFalse();
+    clear.click();
+    fixture.detectChanges();
+    expect(
+      checkbox.querySelector<HTMLInputElement>('input')!.checked
+    ).toBeFalse();
+  });
+
+  it('keeps compact card labels and actions available on keyboard focus', () => {
+    const fixture = TestBed.createComponent(AssetCardComponent);
+    fixture.componentRef.setInput('asset', logo);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    const overlay = element.querySelector<HTMLElement>(
+      '.asset-card__overlay'
+    )!;
+    const name = element.querySelector<HTMLButtonElement>(
+      '.asset-card__name'
+    )!;
+    const menu = element.querySelector<HTMLButtonElement>(
+      '.asset-card__menu-trigger'
+    )!;
+    const preview = element.querySelector<HTMLElement>(
+      '.asset-card__visual'
+    )!;
+    const card = element.querySelector<HTMLElement>('.asset-card')!;
+    expect(preview.contains(overlay)).toBeTrue();
+    expect(card.getBoundingClientRect().height).toBeLessThanOrEqual(
+      preview.getBoundingClientRect().height + 2
+    );
+    expect(getComputedStyle(overlay).opacity).toBe('0');
+    expect(getComputedStyle(menu).opacity).toBe('0');
+    name.focus();
+    expect(getComputedStyle(overlay).opacity).toBe('1');
+    expect(getComputedStyle(menu).opacity).toBe('1');
+    const details = spyOn(fixture.componentInstance.details, 'emit');
+    name.click();
+    expect(details).toHaveBeenCalled();
+  });
+
+  it('moves selected photos together and reports partial failures in the action bar, retaining failed selection for retry', async () => {
+    const { fixture, manager } = setup();
+    const second = { ...logo, _id: 'second', name: 'Second photo' };
+    http.expectOne('/api/uploader').flush([logo, second]);
+    manager.store.setFolderFilter(null);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    const select = (name: string) => {
+      element
+        .querySelector<HTMLInputElement>(
+          `input[aria-label="Select ${name}"]`
+        )!
+        .click();
+      fixture.detectChanges();
+    };
+    select(logo.name);
+    select(second.name);
+    expect(element.textContent).toContain('2 selected');
+    const drag = () => {
+      const dataTransfer = new DataTransfer();
+      element.querySelector('ngx-asset-card')!.dispatchEvent(
+        new DragEvent('dragstart', {
+          dataTransfer,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      const target = element.querySelector(
+        'mat-tree-node[aria-label="Branding"]'
+      )!;
+      target.dispatchEvent(
+        new DragEvent('dragover', {
+          dataTransfer,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      target.dispatchEvent(
+        new DragEvent('drop', {
+          dataTransfer,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      fixture.detectChanges();
+    };
+    drag();
+    expect(manager.store.moving()).toBeTrue();
+    expect(
+      element.querySelector('ngx-action-bar ngx-save-feedback')!
+        .textContent
+    ).toContain('Moving 2 assets');
+    expect(
+      element.querySelector('.asset-results__notice')
+    ).toBeNull();
+    expect(
+      element.querySelector('.asset-library__selection-controls')!
+        .textContent
+    ).toContain('2 selected');
+    const firstMove = http.expectOne('/api/uploader/logo');
+    const secondMove = http.expectOne('/api/uploader/second');
+    expect(firstMove.request.body).toEqual({
+      folderId: branding._id,
+    });
+    expect(secondMove.request.body).toEqual({
+      folderId: branding._id,
+    });
+    firstMove.flush({ ...logo, folderId: branding._id });
+    secondMove.flush(null, {
+      status: 503,
+      statusText: 'Unavailable',
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(manager.store.moving()).toBeFalse();
+    expect(manager.filtered()).toEqual([second]);
+    expect(
+      element.querySelector<HTMLInputElement>(
+        'input[aria-label="Select Second photo"]'
+      )!.checked
+    ).toBeTrue();
+    expect(
+      element.querySelector('ngx-action-bar ngx-save-feedback')!
+        .textContent
+    ).toContain('Moved 1 of 2 assets');
+    expect(element.querySelector('.asset-results__error')).toBeNull();
+    drag();
+    http.expectNone('/api/uploader/logo');
+    http
+      .expectOne('/api/uploader/second')
+      .flush({ ...second, folderId: branding._id });
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(manager.filtered()).toEqual([]);
+    expect(
+      element.querySelector('ngx-action-bar ngx-save-feedback')!
+        .textContent
+    ).toContain('Moved “Second photo” to Branding');
+    expect(
+      element.querySelector('.asset-library__selection-controls')!
+        .textContent
+    ).toContain('0 selected');
+  });
+
+  it('selects all visible assets, clears selection and prunes hidden assets before dragging', async () => {
+    const { fixture, manager } = setup();
+    const second = { ...logo, _id: 'second', name: 'Second photo' };
+    http.expectOne('/api/uploader').flush([logo, second]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    const all = () =>
+      element.querySelector<HTMLInputElement>(
+        'input[aria-label="Select all visible assets"]'
+      )!;
+    all().click();
+    fixture.detectChanges();
+    expect(element.textContent).toContain('2 selected');
+    [...element.querySelectorAll<HTMLButtonElement>('button')]
+      .find((button) =>
+        button.textContent?.includes('Clear selection')
+      )!
+      .click();
+    fixture.detectChanges();
+    expect(element.textContent).toContain('0 selected');
+    all().click();
+    fixture.detectChanges();
+    manager.setQuery('Second photo');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(element.textContent).toContain('1 selected');
+    expect(
+      element.querySelector('.asset-library__selection-controls')!
+        .textContent
+    ).toContain('1 selected');
+    const dataTransfer = new DataTransfer();
+    element.querySelector('ngx-asset-card')!.dispatchEvent(
+      new DragEvent('dragstart', {
+        dataTransfer,
+        bubbles: true,
+        cancelable: true,
+      })
+    );
+    element
+      .querySelector('mat-tree-node[aria-label="Branding"]')!
+      .dispatchEvent(
+        new DragEvent('drop', {
+          dataTransfer,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    http.expectNone('/api/uploader/logo');
+    http
+      .expectOne('/api/uploader/second')
+      .flush({ ...second, folderId: branding._id });
+  });
+
+  it('dragging an unselected photo replaces the selection and moves only that photo', async () => {
+    const { fixture } = setup();
+    const second = { ...logo, _id: 'second', name: 'Second photo' };
+    http.expectOne('/api/uploader').flush([logo, second]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    element
+      .querySelector<HTMLInputElement>(
+        `input[aria-label="Select ${logo.name}"]`
+      )!
+      .click();
+    fixture.detectChanges();
+    const dataTransfer = new DataTransfer();
+    element.querySelectorAll('ngx-asset-card')[1].dispatchEvent(
+      new DragEvent('dragstart', {
+        dataTransfer,
+        bubbles: true,
+        cancelable: true,
+      })
+    );
+    element
+      .querySelector('mat-tree-node[aria-label="Branding"]')!
+      .dispatchEvent(
+        new DragEvent('drop', {
+          dataTransfer,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    fixture.detectChanges();
+    expect(
+      element.querySelector<HTMLInputElement>(
+        `input[aria-label="Select ${logo.name}"]`
+      )!.checked
+    ).toBeFalse();
+    http.expectNone('/api/uploader/logo');
+    http
+      .expectOne('/api/uploader/second')
+      .flush({ ...second, folderId: branding._id });
+  });
+
+  it('moves a dragged asset only on success, retains it on failure, and supports retry and Root drops', async () => {
+    const { fixture, manager } = setup();
+    http.expectOne('/api/uploader').flush([logo]);
+    manager.store.setFolderFilter(null);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    const dragTo = (folder: string) => {
+      const source =
+        element.querySelector<HTMLElement>('ngx-asset-card')!;
+      const target = element.querySelector<HTMLElement>(
+        `mat-tree-node[aria-label="${folder}"]`
+      )!;
+      const dataTransfer = new DataTransfer();
+      source.dispatchEvent(
+        new DragEvent('dragstart', {
+          dataTransfer,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      target.dispatchEvent(
+        new DragEvent('dragover', {
+          dataTransfer,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      fixture.detectChanges();
+      const highlighted = target.classList.contains(
+        'asset-folder-drop--active'
+      );
+      target.dispatchEvent(
+        new DragEvent('drop', {
+          dataTransfer,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      fixture.detectChanges();
+      return highlighted;
+    };
+    expect(dragTo('Root')).toBeFalse();
+    expect(dragTo('All folders')).toBeFalse();
+    http.expectNone('/api/uploader/logo');
+    const external = new DataTransfer();
+    external.items.add(
+      new File(['external'], 'external.png', { type: 'image/png' })
+    );
+    element
+      .querySelector('mat-tree-node[aria-label="Branding"]')!
+      .dispatchEvent(
+        new DragEvent('drop', {
+          dataTransfer: external,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    http.expectNone('/api/uploader/logo');
+    expect(dragTo('Branding')).toBeTrue();
+    const failed = http.expectOne('/api/uploader/logo');
+    expect(failed.request.method).toBe('PATCH');
+    expect(failed.request.body).toEqual({ folderId: branding._id });
+    expect(failed.request.withCredentials).toBeTrue();
+    expect(manager.filtered()).toEqual([logo]);
+    expect(
+      element
+        .querySelector('ngx-asset-card')!
+        .getAttribute('draggable')
+    ).toBe('false');
+    expect(dragTo('Branding')).toBeFalse();
+    manager.store.moveAsset({
+      assetId: logo._id,
+      folderId: branding._id,
+    });
+    http.expectNone('/api/uploader/logo');
+    failed.flush(null, { status: 503, statusText: 'Unavailable' });
+    fixture.detectChanges();
+    expect(manager.filtered()).toEqual([logo]);
+    expect(manager.pending().size).toBe(0);
+    expect(manager.store.feedback().message).toContain(
+      'Drag it again'
+    );
+    expect(dragTo('Branding')).toBeTrue();
+    http
+      .expectOne('/api/uploader/logo')
+      .flush({ ...logo, folderId: branding._id });
+    fixture.detectChanges();
+    expect(manager.filtered()).toEqual([]);
+    expect(manager.store.notice()).toContain('Branding');
+    expect(manager.store.assets()[0].storageUrl).toBe(
+      logo.storageUrl
+    );
+    manager.store.setFolderFilter(branding._id);
+    fixture.detectChanges();
+    expect(dragTo('Root')).toBeTrue();
+    const rootMove = http.expectOne('/api/uploader/logo');
+    expect(rootMove.request.body).toEqual({ folderId: null });
+    rootMove.flush({ ...logo, folderId: null });
+    fixture.detectChanges();
+    expect(manager.filtered()).toEqual([]);
+    expect(manager.store.notice()).toContain('Root');
+  });
+
+  it('places the folder tree beside the assets and filters through tree selection', async () => {
+    const { fixture, manager } = setup();
+    http.expectOne('/api/uploader').flush([
+      { ...logo, folderId: branding._id },
+      {
+        ...logo,
+        _id: 'root-asset',
+        name: 'Root asset',
+        folderId: null,
+      },
+    ]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    expect(
+      element.querySelector(
+        '.asset-library__console ngx-asset-folder-browser'
+      )
+    ).toBeNull();
+    expect(
+      element.querySelector(
+        '.asset-library__workspace .asset-library__inner-panel ngx-asset-folder-browser'
+      )
+    ).not.toBeNull();
+    expect(
+      element.querySelector(
+        '.asset-library__workspace .asset-library__inner-panel ngx-asset-library-results'
+      )
+    ).not.toBeNull();
+    const select = (label: string) => {
+      element
+        .querySelector<HTMLElement>(
+          `mat-tree-node[aria-label="${label}"]`
+        )!
+        .click();
+      fixture.detectChanges();
+    };
+    select('Branding');
+    expect(manager.filtered().map((asset) => asset._id)).toEqual([
+      'logo',
+    ]);
+    select('Root');
+    expect(manager.filtered().map((asset) => asset._id)).toEqual([
+      'root-asset',
+    ]);
+    select('All folders');
+    expect(manager.filtered().length).toBe(2);
+  });
   it('combines folder and existing filters, treats missing IDs as root and resets folders', () => {
     const { fixture, manager } = setup();
     const filed = { ...logo, folderId: branding._id };
@@ -185,7 +669,9 @@ describe('Asset manager', () => {
     ]);
     fixture.detectChanges();
     expect(
-      fixture.nativeElement.querySelector('mat-select').textContent
+      fixture.nativeElement.querySelector(
+        'ngx-asset-folder-browser [aria-selected="true"]'
+      ).textContent
     ).toContain('Root');
     manager.store.setFolderFilter(branding._id);
     manager.setQuery('BRANDING');
