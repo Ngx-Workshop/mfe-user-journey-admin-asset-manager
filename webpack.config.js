@@ -68,6 +68,13 @@ module.exports = withModuleFederationPlugin({
       requiredVersion: '2.8.1',
     },
 
+    // Theming
+    '@tmdjr/ngx-workshop-design-system': {
+      singleton: true,
+      strictVersion: true,
+      requiredVersion: '^21.0.10',
+    },
+
     // Metadata service
     '@tmdjr/ngx-user-metadata': {
       singleton: true,
