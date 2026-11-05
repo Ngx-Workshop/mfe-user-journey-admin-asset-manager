@@ -19,10 +19,9 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { finalize } from 'rxjs';
-import { AssetFileInputComponent } from './asset-file-input.component';
 import { AssetManagerStore } from '../../state/asset-manager.store';
 import { Asset, Folder } from '../../models/asset.models';
-import { assetError, fileError } from '../../utils/asset-utils';
+import { assetError } from '../../utils/asset-utils';
 import { assetForm, metadata } from '../../forms/asset-form';
 
 @Component({
@@ -30,7 +29,6 @@ import { assetForm, metadata } from '../../forms/asset-form';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     NgxButton,
-    AssetFileInputComponent,
     ReactiveFormsModule,
     MatDialogModule,
     MatButtonModule,
@@ -41,22 +39,9 @@ import { assetForm, metadata } from '../../forms/asset-form';
   ],
   template: `
     <h2 mat-dialog-title class="asset-editor__title">
-      {{
-        data.asset
-          ? 'Edit asset'
-          : data.upload
-            ? 'Upload a file'
-            : 'Create asset record'
-      }}
+      {{ data.asset ? 'Edit asset' : 'Create asset record' }}
     </h2>
     <mat-dialog-content class="asset-editor">
-      @if (data.upload) {
-        <ngx-asset-file-input
-          [file]="file()"
-          [disabled]="busy()"
-          (choose)="choose($event)"
-        />
-      }
       <form
         class="asset-editor__form"
         [formGroup]="form"
@@ -91,9 +76,7 @@ import { assetForm, metadata } from '../../forms/asset-form';
         <mat-form-field
           class="asset-editor__field"
           appearance="outline"
-          ><mat-label>{{
-            data.upload ? 'Display name (optional)' : 'Name'
-          }}</mat-label>
+          ><mat-label>Name</mat-label>
           <input matInput formControlName="name" maxlength="120" />
           <mat-error>Enter a name up to 120 characters.</mat-error>
         </mat-form-field>
@@ -109,25 +92,23 @@ import { assetForm, metadata } from '../../forms/asset-form';
           ></textarea>
           <mat-error>Use up to 2000 characters.</mat-error>
         </mat-form-field>
-        @if (!data.upload) {
-          <mat-form-field
-            class="asset-editor__field"
-            appearance="outline"
-            ><mat-label>Tags</mat-label>
-            <input
-              matInput
-              formControlName="tags"
-              placeholder="branding, workshop, course"
-            />
-            <mat-hint
-              >Comma separated · up to 50 tags, 100 characters
-              each</mat-hint
-            >
-            <mat-error
-              >Use up to 50 tags of 100 characters each.</mat-error
-            >
-          </mat-form-field>
-        }
+        <mat-form-field
+          class="asset-editor__field"
+          appearance="outline"
+          ><mat-label>Tags</mat-label>
+          <input
+            matInput
+            formControlName="tags"
+            placeholder="branding, workshop, course"
+          />
+          <mat-hint
+            >Comma separated · up to 50 tags, 100 characters
+            each</mat-hint
+          >
+          <mat-error
+            >Use up to 50 tags of 100 characters each.</mat-error
+          >
+        </mat-form-field>
       </form>
       @if (error()) {
         <p class="asset-editor__error" role="alert">{{ error() }}</p>
@@ -135,19 +116,10 @@ import { assetForm, metadata } from '../../forms/asset-form';
       @if (busy()) {
         <mat-progress-bar
           class="asset-editor__progress"
-          [mode]="
-            progress() === null ? 'indeterminate' : 'determinate'
-          "
-          [value]="progress() ?? 0"
+          mode="indeterminate"
         />
         <p class="asset-editor__status" role="status">
-          {{
-            data.upload
-              ? progress() === null
-                ? 'Receiving file…'
-                : 'Receiving file: ' + progress() + '%'
-              : 'Saving…'
-          }}
+          Saving…
         </p>
       }
     </mat-dialog-content>
@@ -160,10 +132,10 @@ import { assetForm, metadata } from '../../forms/asset-form';
         type="submit"
         form="asset-editor-form"
         [disabled]="
-          busy() || form.invalid || (data.upload && !file())
+          busy() || form.invalid
         "
       >
-        {{ data.upload ? 'Upload file' : 'Save asset' }}
+        Save asset
       </button>
     </mat-dialog-actions>
   `,
@@ -183,7 +155,6 @@ import { assetForm, metadata } from '../../forms/asset-form';
 export class AssetEditorComponent {
   readonly data = inject<{
     asset?: Asset;
-    upload?: boolean;
     folders?: readonly Folder[];
     folderId?: string | null;
   }>(MAT_DIALOG_DATA);
@@ -192,7 +163,7 @@ export class AssetEditorComponent {
   private readonly destroyRef = inject(DestroyRef);
   readonly form = assetForm(
     this.data.asset,
-    this.data.upload,
+    false,
     this.data.folderId
   );
   readonly missingFolderId =
@@ -203,23 +174,12 @@ export class AssetEditorComponent {
       ? this.data.asset.folderId
       : null;
   readonly busy = signal(false);
-  readonly file = signal<File | null>(null);
   readonly error = signal('');
-  readonly progress = signal<number | null>(null);
-  choose(event: Event): void {
-    const file =
-      (event.target as HTMLInputElement).files?.[0] ?? null;
-    const error = file ? fileError(file) : null;
-    this.error.set(error ?? '');
-    this.file.set(error ? null : file);
-  }
   save(): void {
     if (this.busy()) return;
     this.form.markAllAsTouched();
-    if (this.form.invalid || (this.data.upload && !this.file()))
-      return;
+    if (this.form.invalid) return;
     this.error.set('');
-    this.progress.set(null);
     this.busy.set(true);
     this.form.disable();
     this.ref.disableClose = true;
@@ -228,38 +188,16 @@ export class AssetEditorComponent {
       this.form.enable();
       this.ref.disableClose = false;
     };
-    if (this.data.upload) {
-      const values = this.form.getRawValue();
-      this.store
-        .upload(
-          this.file()!,
-          values.name,
-          values.description,
-          values.folderId
-        )
-        .pipe(takeUntilDestroyed(this.destroyRef), finalize(done))
-        .subscribe({
-          next: (event) => {
-            if (event.kind === 'progress')
-              this.progress.set(event.percent);
-            if (event.kind === 'complete')
-              this.ref.close(event.asset);
-          },
-          error: (error) =>
-            this.error.set(assetError(error, 'upload')),
-        });
-    } else {
-      const request = this.store.saveAsset(
-        metadata(this.form),
-        this.data.asset?._id
-      );
-      request
-        .pipe(takeUntilDestroyed(this.destroyRef), finalize(done))
-        .subscribe({
-          next: (asset) => this.ref.close(asset),
-          error: (error) =>
-            this.error.set(assetError(error, 'asset-save')),
-        });
-    }
+    const request = this.store.saveAsset(
+      metadata(this.form),
+      this.data.asset?._id
+    );
+    request
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(done))
+      .subscribe({
+        next: (asset) => this.ref.close(asset),
+        error: (error) =>
+          this.error.set(assetError(error, 'asset-save')),
+      });
   }
 }

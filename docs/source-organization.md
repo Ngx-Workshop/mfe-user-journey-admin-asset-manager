@@ -34,8 +34,8 @@ editors, details, summary, folder browser, filters, results, cards and the libra
 view-model contract. These views serve one area, so no shared `components/` category
 is needed yet. `api/` contains AssetApiService; `state/` contains AssetManagerStore;
 `models/` holds published DTO aliases and shared command/filter types; `forms/`
-contains the asset form factory/validators; `utils/` holds pure helpers. There are no
-feature configuration, resolver or internal-route files to move.
+contains the asset form factory/validators; `utils/` holds pure helpers. The `pages/upload/` area owns the routed upload panel, its local view model and
+single-file picker/drop presentation. There are no feature configuration or resolver files.
 
 `app.routes.ts` remains the public federation route entry. A feature may have an
 internal route module. Bootstrap, environment files, route URLs, HTTP contracts,

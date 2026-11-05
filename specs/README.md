@@ -19,3 +19,5 @@ below with relative links. A feature folder contains `spec.md`, `plan.md`,
 Keep one row per feature, retain completed records for rationale, and update
 status when work changes. Select work from the user's request and this index;
 the largest folder number is not automatically the active feature.
+
+| 005 Routed upload | Complete | [Spec](005-routed-upload/spec.md) | [Plan](005-routed-upload/plan.md) | [Tasks](005-routed-upload/tasks.md) | [Handoff](005-routed-upload/handoff.md) |

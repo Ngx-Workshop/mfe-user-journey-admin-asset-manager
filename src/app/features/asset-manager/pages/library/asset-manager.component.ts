@@ -4,6 +4,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -80,7 +81,7 @@ import { AssetManagerSummaryComponent } from './asset-manager-summary.component'
         ngxButton
         shape="chevron"
         surface="outline"
-        (click)="edit(undefined, true)"
+        (click)="upload()"
       >
         <mat-icon>upload</mat-icon>
         Upload file
@@ -92,7 +93,7 @@ import { AssetManagerSummaryComponent } from './asset-manager-summary.component'
         [viewModel]="store.libraryViewModel()"
         (refresh)="refresh()"
         (resetFilters)="clearFilters()"
-        (upload)="edit(undefined, true)"
+        (upload)="upload()"
         (showDetails)="details($event)"
         (edit)="edit($event)"
         (archive)="archive($event)"
@@ -212,6 +213,8 @@ export class AssetManagerComponent {
   readonly actionBarHeight = signal(56);
   readonly store = inject(AssetManagerStore);
   private readonly dialogs = inject(AssetManagerDialogs);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly assets = this.store.assets;
   readonly loading = this.store.loading;
@@ -251,8 +254,16 @@ export class AssetManagerComponent {
     this.store.setStorageFilter(filter);
   }
 
-  edit(asset?: Asset, upload = false): void {
-    this.dialogs.edit(asset, upload);
+  upload(): void {
+    const folder = this.store.folderFilter();
+    void this.router.navigate(['upload'], {
+      relativeTo: this.route.parent,
+      queryParams: { folderId: folder === 'all' ? null : folder },
+    });
+  }
+
+  edit(asset?: Asset): void {
+    this.dialogs.edit(asset);
   }
   details(asset: Asset): void {
     this.dialogs.details(asset);

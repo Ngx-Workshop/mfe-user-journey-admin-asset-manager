@@ -27,6 +27,20 @@ proxy APIs. For real integration, use the Orchestrator's session-local
 `http://localhost:4201/remoteEntry.js` override in the authenticated shell so APIs
 remain same-origin. Do not load another remote inside this remote.
 
+## Routed upload verification (2026-11-04)
+
+Node 22.23.3: all 58 ChromeHeadless tests pass, production federation build passes
+with a nonempty 29,824-byte license file, and layout/diff checks pass. New mocked
+router/HTTP checks cover nested host and standalone URLs, the legacy library entry,
+both upload CTAs, selected folder/Root, cancel/success return, progress, busy guard,
+disabled drops, validation, duplicate/storage recovery and folder-load retry.
+The standalone preview at localhost:4219/upload renders the new panel and its
+folder-service error state. At 390 × 844 the document width is 390px, hints wrap
+without overlap, and footer actions remain reachable by scrolling/keyboard. Desktop
+layout was also inspected. Standalone has no API proxy, so live backend uploads and
+authenticated host routing remain unverified. Consumers using Component alone must
+mount the exported Routes for the upload URL. See [handoff](../specs/005-routed-upload/handoff.md).
+
 ## Test organization
 
 Unit specs live in repository-root `testing/app/features/asset-manager/`, mirroring

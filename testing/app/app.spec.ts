@@ -9,6 +9,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { By } from '@angular/platform-browser';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
+import { Router, provideRouter } from '@angular/router';
 import { App } from '../../src/app/app';
 import { AssetManagerComponent } from '../../src/app/features/asset-manager/pages/library/asset-manager.component';
 import {
@@ -59,6 +60,7 @@ describe('Asset manager', () => {
       imports: [App],
       providers: [
         provideZonelessChangeDetection(),
+        provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
         provideNoopAnimations(),
@@ -723,18 +725,12 @@ describe('Asset manager', () => {
     ).and.returnValue({
       afterClosed: () => of(undefined),
     } as ReturnType<MatDialog['open']>);
-    manager.edit(undefined, true);
-    expect(dialog).toHaveBeenCalledWith(
-      AssetEditorComponent,
-      jasmine.objectContaining({
-        data: {
-          asset: undefined,
-          upload: true,
-          folders: [branding],
-          folderId: branding._id,
-        },
-      })
-    );
+    const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    manager.upload();
+    expect(navigate).toHaveBeenCalledWith(['upload'], jasmine.objectContaining({
+      queryParams: { folderId: branding._id },
+    }));
+    expect(dialog).not.toHaveBeenCalled();
     expect(manager.assets()).toEqual([logo]);
     dialog.and.returnValue({
       afterClosed: () => of(moved),

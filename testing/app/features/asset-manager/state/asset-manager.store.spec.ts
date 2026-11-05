@@ -7,6 +7,7 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
+import { provideRouter } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { AssetManagerComponent } from '../../../../../src/app/features/asset-manager/pages/library/asset-manager.component';
@@ -32,6 +33,7 @@ describe('Asset manager singleton and operation streams', () => {
       imports: [AssetManagerComponent],
       providers: [
         provideZonelessChangeDetection(),
+        provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
         provideNoopAnimations(),

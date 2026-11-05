@@ -1,5 +1,5 @@
 # Asset Manager architecture
-Source reviewed: 2026-10-31.
+Source reviewed: 2026-11-04.
 
 ## Responsibility and source map
 This Angular standalone remote owns the administrator asset library. It consumes
@@ -10,7 +10,7 @@ or binary persistence.
 | --- | --- |
 | Bootstrap / standalone providers | `src/main.ts`, `src/bootstrap.ts`, `src/app/app.config.ts` |
 | Federation root | `src/app/app.ts`: named and default `App` |
-| Routes | `src/app/app.routes.ts`: named `Routes`, empty path and legacy `hello-world` |
+| Routes | `src/app/app.routes.ts`: named `Routes`, library at empty path / legacy `hello-world`, and `upload` |
 | Page/dialog orchestration | `src/app/features/asset-manager/pages/library/asset-manager.component.ts`, `asset-manager-dialogs.ts` |
 | Mirrored feature tests / app composition | `testing/app/features/asset-manager/`, `testing/app/app.spec.ts` |
 | Root singleton state/view models/API workflows | `src/app/features/asset-manager/state/asset-manager.store.ts` |
@@ -22,7 +22,8 @@ or binary persistence.
 | Folder browsing and create/rename/delete dialogs | `src/app/features/asset-manager/pages/library/asset-folder-browser.component.ts`, `asset-folder-editor.component.ts` |
 | Shared command/filter types | `src/app/features/asset-manager/models/asset-manager.models.ts` |
 | Pure media mapping | `src/app/features/asset-manager/utils/asset-manager.utils.ts` |
-| Metadata/file intake | `src/app/features/asset-manager/pages/library/asset-editor.component.ts`, `asset-file-input.component.ts` |
+| Metadata editor | `src/app/features/asset-manager/pages/library/asset-editor.component.ts` |
+| Routed upload and file intake | `src/app/features/asset-manager/pages/upload/asset-upload-page.ts`, `asset-upload-view-model.ts`, `asset-file-input.component.ts` |
 | Details/delete confirmation | `src/app/features/asset-manager/pages/library/asset-details.component.ts` |
 | Typed forms/mapping | `src/app/features/asset-manager/forms/asset-form.ts` |
 | Stateless HTTP transport | `src/app/features/asset-manager/api/asset-api.service.ts` |
@@ -57,10 +58,11 @@ owned by the root store; page destruction does not terminate shared operations.
 
 `AssetManagerComponent` coordinates the page and delegates dialog work to its
 component-scoped `AssetManagerDialogs`. Details and confirmation subscriptions end
-with the page lifetime. Editors are orchestration components: they own typed forms,
-file selection and local busy/error/progress signals, call store operations and bind
-subscriptions to their dialog lifetime. File intake is a presentation child. Editors
-retain input on failure and block closing during writes. Dialog close values no longer
+with the page lifetime. Metadata editors own typed forms and local busy/error signals, call store operations and bind
+subscriptions to their dialog lifetime. Upload orchestration lives in the page-scoped
+AssetUploadViewModel. Its file intake child emits File intentions from either the native
+picker or a single-file drop. Both workflows retain input on failure and block departure
+during writes. Dialog close values no longer
 commit data: state is already updated by the store before the successful dialog closes.
 
 Cache and filters persist through page navigation for the root injector lifetime;
@@ -69,8 +71,8 @@ reloads. This remote's singleton belongs to the host root injector when federate
 The library composition is a documented size exception (about 320 lines): it keeps
 the requested outer and inner panels, projection slots and four body measurements
 in one view. Folder browsing remains a focused presentation child. Other
-presentational components remain focused; the cohesive asset editor retains its
-existing small exception to the approximate 230-line guideline.
+presentational components remain focused; the metadata editor is below the
+approximate 230-line guideline.
 
 ## Published contracts
 Installed `@tmdjr/service-uploader-contracts` 0.0.11 `components.schemas` supplies
@@ -147,7 +149,9 @@ inside the main asset-library__workspace panel. Action bar height is measured;
 action bar, with observer cleanup at destruction. Console and workspace bodies fit the viewport on desktop; nested folder and asset
 bodies use the workspace boundary for their own scroll areas. Below 1201px the
 inner panels stack in document flow. At 900px and below the outer panels also
-stack, and the filter console can be expanded with Show controls. Cards retain Material menus, and editors retain Material forms/dialogs.
+stack, and the filter console can be expanded with Show controls. Cards retain Material menus; metadata and folder editors retain Material forms/dialogs.
+Upload uses a centered stepped glass NgxPanel with viewport background, entrance
+animation and projected footer actions, without a stepper.
 Dialogs, menus and selects explicitly opt into the shared overlay classes.
 No Angular or federation shared versions changed.
 
@@ -210,3 +214,23 @@ have transparent host backgrounds, disabled ripple and zero state-layer opacity
 through public Material overrides; keyboard focus indicators remain available.
 The former unused DatePipe/NgxInlineStatus imports and inactive card markup were
 removed as part of this presentation change.
+
+## Routed uploads
+`upload` is relative to the remote mount (normally `/admin-asset-manager/upload`).
+Both library upload entry points navigate relative to the mounted library route's
+parent; `folderId` is an optional query parameter. All folders/Root omit the parameter.
+Direct entry refreshes folders, exposes retry on failure and preserves unavailable
+folder IDs visibly until the user changes the destination. Upload success commits
+through the existing store before returning to the library; Cancel also returns.
+An in-flight upload disables form/file/actions, rejects duplicate submission, blocks
+route deactivation and requests browser unload protection. Once idle, leaving is
+allowed without an unsaved-input prompt.
+
+The default/named App exposure remains the library. Standalone bootstrap now owns a
+router outlet and provides the same exported Routes used by the host. Consumers
+mounting only `./Component` must mount `./Routes` to support the upload URL; this
+checkout does not alter host registration. Native file drops are confined to the
+upload zone and remain separate from library asset-to-folder moves. Multiple-file
+drops are rejected, and the existing 25 MiB/nonempty/filename limits apply equally
+to picker and drop selection. No upload starts until form submission. Backend
+contracts, shared dependency versions and API ownership are unchanged.

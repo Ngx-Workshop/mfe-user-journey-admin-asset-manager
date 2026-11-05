@@ -19,11 +19,10 @@ export class AssetManagerDialogs {
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
 
-  edit(asset?: Asset, upload = false): void {
+  edit(asset?: Asset): void {
     this.dialog.open(AssetEditorComponent, {
       data: {
         asset,
-        upload,
         folders: this.store.folders(),
         folderId:
           this.store.folderFilter() === 'all'
